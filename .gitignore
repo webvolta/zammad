@@ -27,6 +27,9 @@
 
 # Zammad -----------------------------------------------------------------------
 
+# backup config
+/contrib/backup/config
+
 # database files
 /db/*.sqlite3
 /db/schema.rb
@@ -44,6 +47,7 @@
 /public/assets/app
 /public/assets/custom
 /public/assets/chat/node_modules
+/public/assets/addons
 /tmp/*
 !/tmp/pids
 /tmp/pids/*
