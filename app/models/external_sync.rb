@@ -17,7 +17,7 @@ class ExternalSync < ApplicationModel
           object[attribute] = value
           changed         ||= true
         rescue => e
-          Rails.logger.error "ERROR: Unable to assign attribute #{attribute} to object #{object.class.name}: #{e.inspect}"
+          Rails.logger.error "Unable to assign attribute #{attribute} to object #{object.class.name}: #{e.inspect}"
         end
       end
       changed
@@ -44,6 +44,15 @@ class ExternalSync < ApplicationModel
         result[local_key_sym] = value
       end
       result
+    end
+
+    def migrate(object, from_id, to_id)
+      where(
+        object: object,
+        o_id:   from_id,
+      ).update_all( # rubocop:disable Rails/SkipsModelValidations
+        o_id: to_id,
+      )
     end
 
     private

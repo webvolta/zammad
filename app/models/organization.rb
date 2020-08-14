@@ -10,7 +10,6 @@ class Organization < ApplicationModel
   include ChecksHtmlSanitized
   include HasObjectManagerAttributesValidation
 
-  include Organization::ChecksAccess
   include Organization::Assets
   include Organization::Search
   include Organization::SearchIndex
@@ -20,7 +19,8 @@ class Organization < ApplicationModel
   before_create :domain_cleanup
   before_update :domain_cleanup
 
-  validates :name, presence: true
+  validates :name,   presence: true
+  validates :domain, presence: { message: 'required when Domain Based Assignment is enabled' }, if: :domain_assignment
 
   activity_stream_permission 'admin.role'
 

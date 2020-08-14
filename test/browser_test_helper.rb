@@ -1,5 +1,5 @@
 ENV['RAILS_ENV'] = 'test'
-# rubocop:disable HandleExceptions, NonLocalExitFromIterator, Style/GuardClause, Lint/MissingCopEnableDirective
+# rubocop:disable Lint/NonLocalExitFromIterator, Style/GuardClause, Lint/MissingCopEnableDirective
 require File.expand_path('../config/environment', __dir__)
 require 'selenium-webdriver'
 require 'json'
@@ -41,7 +41,8 @@ class TestCase < ActiveSupport::TestCase
 
   def profile
     browser_profile = nil
-    if browser == 'firefox'
+    case browser
+    when 'firefox'
       browser_profile = Selenium::WebDriver::Firefox::Profile.new
 
       browser_profile['intl.locale.matchOS']      = false
@@ -50,7 +51,7 @@ class TestCase < ActiveSupport::TestCase
       # currently console log not working for firefox
       # https://github.com/SeleniumHQ/selenium/issues/1161
       #browser_profile['loggingPref']              = { browser: :all }
-    elsif browser == 'chrome'
+    when 'chrome'
 
       # profile are only working on remote selenium
       if ENV['REMOTE_URL']
@@ -89,10 +90,11 @@ class TestCase < ActiveSupport::TestCase
         profile: profile,
       }
       if ENV['BROWSER_HEADLESS'].present?
-        if browser == 'firefox'
+        case browser
+        when 'firefox'
           params[:options] = Selenium::WebDriver::Firefox::Options.new
           params[:options].add_argument('-headless')
-        elsif browser == 'chrome'
+        when 'chrome'
           params[:options] = Selenium::WebDriver::Chrome::Options.new
           params[:options].add_argument('-headless')
         end
@@ -353,9 +355,25 @@ class TestCase < ActiveSupport::TestCase
     end
     return if !clues
 
-    instance.execute_script("$('.js-modal--clue .js-close').click()")
+    checks   = 25
+    previous = clues.location
+    (checks + 1).times do |check|
+      raise "Element still moving after #{checks} checks" if check == checks
+
+      current = clues.location
+      sleep 0.2 if ENV['CI']
+      break if previous == current
+
+      previous = current
+    end
+    clues.click
+
+    watch_for_disappear(
+      browser: instance,
+      css:     'modal-backdrop js-backdrop',
+    )
+
     assert(true, 'clues closed')
-    sleep 1
   end
 
 =begin
@@ -752,11 +770,18 @@ class TestCase < ActiveSupport::TestCase
 
     instance = params[:browser] || @browser
 
-    element = instance.find_elements(css: params[:css])[0]
-    if !params[:no_click]
-      element.click
+    begin
+      retries ||= 0
+      element = instance.find_elements(css: params[:css])[0]
+      if !params[:no_click]
+        element.click
+      end
+      element.clear
+    rescue Selenium::WebDriver::Error::StaleElementReferenceError
+      sleep retries
+      retries += 1
+      retry if retries < 3
     end
-    element.clear
 
     begin
       if !params[:slow]
@@ -788,7 +813,7 @@ class TestCase < ActiveSupport::TestCase
     end
 
     # it's not working stable with ff via selenium, use js
-    if browser =~ /firefox/i && params[:css] =~ /\[data-name=/
+    if browser =~ /firefox/i && params[:css].include?('[data-name=')
       log('set_ff_trigger_workaround', params)
       instance.execute_script("$('#{params[:css]}').trigger('focusout')")
     end
@@ -1001,7 +1026,7 @@ class TestCase < ActiveSupport::TestCase
     instance = params[:browser] || @browser
     element  = instance.find_elements(css: params[:css])[0]
 
-    if params[:css].match?(/select/)
+    if params[:css].include?('select')
       dropdown = Selenium::WebDriver::Support::Select.new(element)
       success  = false
       dropdown.selected_options&.each do |option|
@@ -1596,8 +1621,13 @@ wait untill text in selector disabppears
         break
       end
     rescue
-      # try again
+      # Firefox doesn't move the mouse if it's already at the position.
+      # Therefore the hover event is not triggered in all cases.
+      # That's why we move the mouse a bit as a workaround and try again.
+      # The last working selenium version was: https://github.com/elgalu/docker-selenium/releases/tag/3.14.0-p17
+      instance.action.move_by(100, 100).perform
 
+      # try again
     end
     assert(true, 'all tasks closed')
   end
@@ -2891,6 +2921,12 @@ wait untill text in selector disabppears
     element.clear
     element.send_keys(params[:value])
     sleep 2
+
+    watch_for_disappear(
+      browser: instance,
+      css:     '.navigation .search.loading'
+    )
+
     #instance.find_element(partial_link_text: params[:value] } ).click
     instance.execute_script("$(\".js-global-search-result a:contains('#{params[:value]}') .nav-tab-name\").first().click()")
     watch_for(
@@ -3050,17 +3086,18 @@ wait untill text in selector disabppears
     end
 
     if data[:role]
-      if data[:role] == 'Admin'
+      case data[:role]
+      when 'Admin'
         check(
           browser: instance,
           css:     '.modal input[name=role_ids][value=1]',
         )
-      elsif data[:role] == 'Customer'
+      when 'Customer'
         check(
           browser: instance,
           css:     '.modal input[name=role_ids][value=3]',
         )
-      elsif data[:role] == 'Agent'
+      when 'Agent'
         check(
           browser: instance,
           css:     '.modal input[name=role_ids][value=2]',
@@ -3217,17 +3254,18 @@ wait untill text in selector disabppears
     end
 
     if data[:role]
-      if data[:role] == 'Admin'
+      case data[:role]
+      when 'Admin'
         check(
           browser: instance,
           css:     '.modal input[name=role_ids][value=1]',
         )
-      elsif data[:role] == 'Customer'
+      when 'Customer'
         check(
           browser: instance,
           css:     '.modal input[name=role_ids][value=3]',
         )
-      elsif data[:role] == 'Agent'
+      when 'Agent'
         check(
           browser: instance,
           css:     '.modal input[name=role_ids][value=2]',
@@ -4684,7 +4722,8 @@ wait untill text in selector disabppears
 
     if data[:data_option]
       if data[:data_option][:options]
-        if data[:data_type] == 'Boolean'
+        case data[:data_type]
+        when 'Boolean'
           # rubocop:disable Lint/BooleanSymbol
           element = instance.find_elements(css: '.modal .js-valueTrue').first
           element.clear
@@ -4693,7 +4732,7 @@ wait untill text in selector disabppears
           element.clear
           element.send_keys(data[:data_option][:options][:false])
           # rubocop:enable Lint/BooleanSymbol
-        elsif data[:data_type] == 'Tree Select'
+        when 'Tree Select'
           add_tree_options(
             instance: instance,
             options:  data[:data_option][:options],

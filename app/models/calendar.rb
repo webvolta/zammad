@@ -86,7 +86,7 @@ returns
 =end
 
   def self.ical_feeds
-    data = YAML.load_file(Rails.root.join('config', 'holiday_calendars.yml'))
+    data = YAML.load_file(Rails.root.join('config/holiday_calendars.yml'))
     url  = data['url']
 
     data['countries'].map do |country, domain|
@@ -256,7 +256,7 @@ returns
 
   # get day and comment by event
   def self.day_and_comment_by_event(event, start_time)
-    day = "#{start_time.year}-#{format('%02d', start_time.month)}-#{format('%02d', start_time.day)}"
+    day = "#{start_time.year}-#{format('%<month>02d', month: start_time.month)}-#{format('%<day>02d', day: start_time.day)}"
     comment = event.summary || event.description
     comment = comment.to_utf8(fallback: :read_as_sanitized_binary)
 
@@ -327,6 +327,21 @@ returns
     holidays
   end
 
+  def biz
+    Biz::Schedule.new do |config|
+
+      # get business hours
+      hours = business_hours_to_hash
+      raise "No configured hours found in calendar #{inspect}" if hours.blank?
+
+      config.hours = hours
+
+      # get holidays
+      config.holidays = public_holidays_to_array
+      config.time_zone = timezone
+    end
+  end
+
   private
 
   # if changed calendar is default, set all others default to false
@@ -345,7 +360,7 @@ returns
 
   # check if min one is set to default true
   def min_one_check
-    if !Calendar.find_by(default: true)
+    if !Calendar.exists?(default: true)
       first = Calendar.order(:created_at, :id).limit(1).first
       return true if !first
 
@@ -361,7 +376,7 @@ returns
         sla.save!
         next
       end
-      if !Calendar.find_by(id: sla.calendar_id)
+      if !Calendar.exists?(id: sla.calendar_id)
         sla.calendar_id = default_calendar.id
         sla.save!
       end

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, websocket: false do
+RSpec.describe 'QUnit', type: :system, authenticated_as: false, set_up: true, websocket: false do
 
   def q_unit_tests(test_name)
 
@@ -22,6 +22,10 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
 
   it 'Core' do
     async_q_unit_tests('core')
+  end
+
+  it 'I18n' do
+    async_q_unit_tests('i18n')
   end
 
   context 'UI' do
@@ -78,6 +82,10 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
       q_unit_tests('form_timer')
     end
 
+    it 'Color' do
+      q_unit_tests('form_color')
+    end
+
     it 'Extended' do
       q_unit_tests('form_extended')
     end
@@ -98,8 +106,20 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
       q_unit_tests('form_ticket_perform_action')
     end
 
+    it 'Ticket macro' do
+      q_unit_tests('ticket_macro')
+    end
+
     it 'Validation' do
       q_unit_tests('form_validation')
+    end
+
+    it 'Skip rendering' do
+      q_unit_tests('form_skip_rendering')
+    end
+
+    it 'SLA times' do
+      q_unit_tests('form_sla_times')
     end
   end
 
@@ -119,6 +139,12 @@ RSpec.describe 'QUnit', type: :system, authenticated: false, set_up: true, webso
 
     it 'Taskbar' do
       q_unit_tests('taskbar')
+    end
+  end
+
+  context 'Knowlede Base Editor' do
+    it 'Vdeo Embeding' do
+      q_unit_tests('kb_video_embeding')
     end
   end
 end

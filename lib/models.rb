@@ -27,7 +27,7 @@ returns
   def self.all
     @all ||= begin
       all    = {}
-      dir    = Rails.root.join('app', 'models').to_s
+      dir    = Rails.root.join('app/models').to_s
       tables = ActiveRecord::Base.connection.tables
       Dir.glob("#{dir}/**/*.rb") do |entry|
         next if entry.match?(/application_model/i)
@@ -266,6 +266,9 @@ returns
         items_to_update.each_value(&:save!)
       end
     end
+
+    ExternalSync.migrate(object_name, object_id_primary, object_id_to_merge)
+
     true
   end
 end

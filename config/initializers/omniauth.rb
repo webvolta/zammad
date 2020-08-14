@@ -1,4 +1,4 @@
-Dir[ Rails.root.join('lib', 'omniauth', '*') ].each do |file|
+Dir[ Rails.root.join('lib/omniauth/*') ].sort.each do |file|
   if File.file?(file)
     require file
   end
@@ -66,3 +66,5 @@ end
 OmniAuth.config.full_host = proc {
   "#{Setting.get('http_type')}://#{Setting.get('fqdn')}"
 }
+
+OmniAuth.config.logger = Rails.logger

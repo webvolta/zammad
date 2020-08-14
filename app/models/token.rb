@@ -1,6 +1,8 @@
 # Copyright (C) 2012-2016 Zammad Foundation, http://zammad-foundation.org/
 
 class Token < ApplicationModel
+  include CanBeAuthorized
+
   before_create :generate_token
   belongs_to    :user, optional: true
   store         :preferences
@@ -79,27 +81,7 @@ returns
 
     # add permission check
     if data[:permission]
-      return if !user.permissions?(data[:permission])
-      return if !token.preferences[:permission]
-
-      local_permissions = data[:permission]
-      if data[:permission].class != Array
-        local_permissions = [data[:permission]]
-      end
-      match = false
-      local_permissions.each do |local_permission|
-        local_permissions = Permission.with_parents(local_permission)
-        local_permissions.each do |local_permission_name|
-          next if !token.preferences[:permission].include?(local_permission_name)
-
-          match = true
-          break
-        end
-        next if !match
-
-        break
-      end
-      return if !match
+      return if !token.permissions?(data[:permission])
     end
 
     # return token user
@@ -117,6 +99,19 @@ cleanup old token
   def self.cleanup
     Token.where('persistent IS ? AND created_at < ?', nil, Time.zone.now - 30.days).delete_all
     true
+  end
+
+  def permissions
+    Permission.where(
+      name:   Array(preferences[:permission]),
+      active: true,
+    )
+  end
+
+  def permissions?(names)
+    return false if !user.permissions?(names)
+
+    super(names)
   end
 
   private

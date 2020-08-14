@@ -2,6 +2,7 @@
 require_dependency 'karma/user'
 
 class User < ApplicationModel
+  include CanBeAuthorized
   include CanBeImported
   include HasActivityStreamLog
   include ChecksClientNotification
@@ -12,17 +13,17 @@ class User < ApplicationModel
   include HasGroups
   include HasRoles
   include HasObjectManagerAttributesValidation
-
-  include User::ChecksAccess
+  include HasTicketCreateScreenImpact
+  include User::HasTicketCreateScreenImpact
   include User::Assets
   include User::Search
   include User::SearchIndex
 
-  has_and_belongs_to_many :roles,          after_add: %i[cache_update check_notifications], after_remove: :cache_update, before_add: %i[validate_agent_limit_by_role validate_roles], before_remove: :last_admin_check_by_role, class_name: 'Role'
   has_and_belongs_to_many :organizations,  after_add: :cache_update, after_remove: :cache_update, class_name: 'Organization'
   has_many                :tokens,         after_add: :cache_update, after_remove: :cache_update
   has_many                :authorizations, after_add: :cache_update, after_remove: :cache_update
   belongs_to              :organization,   inverse_of: :members, optional: true
+  has_many                :permissions,    -> { where(roles: { active: true }, active: true) }, through: :roles
 
   before_validation :check_name, :check_email, :check_login, :ensure_uniq_email, :ensure_password, :ensure_roles, :ensure_identifier
   before_validation :check_mail_delivery_failed, on: :update
@@ -42,6 +43,8 @@ class User < ApplicationModel
                                      :image,
                                      :image_source,
                                      :preferences
+
+  association_attributes_ignored :permissions
 
   history_attributes_ignored :password,
                              :last_login,
@@ -378,73 +381,6 @@ returns
 
 =begin
 
-get all permissions of user
-
-  user = User.find(123)
-  user.permissions
-
-returns
-
-  {
-    'permission.key' => true,
-    # ...
-  }
-
-=end
-
-  def permissions
-    list = {}
-    ::Permission.select('permissions.name, permissions.preferences').joins(:roles).where('roles.id IN (?) AND permissions.active = ?', role_ids, true).pluck(:name, :preferences).each do |permission|
-      next if permission[1]['selectable'] == false
-
-      list[permission[0]] = true
-    end
-    list
-  end
-
-=begin
-
-true or false for permission
-
-  user = User.find(123)
-  user.permissions?('permission.key') # access to certain permission.key
-  user.permissions?(['permission.key1', 'permission.key2']) # access to permission.key1 or permission.key2
-
-  user.permissions?('permission') # access to all sub keys
-
-  user.permissions?('permission.*') # access if one sub key access exists
-
-returns
-
-  true|false
-
-=end
-
-  def permissions?(key)
-    keys = key
-    if key.class == String
-      keys = [key]
-    end
-    keys.each do |local_key|
-      list = []
-      if local_key.match?(/\.\*$/)
-        local_key.sub!('.*', '.%')
-        permissions = ::Permission.with_parents(local_key)
-        list = ::Permission.select('preferences').joins(:roles).where('roles.id IN (?) AND roles.active = ? AND (permissions.name IN (?) OR permissions.name LIKE ?) AND permissions.active = ?', role_ids, true, permissions, local_key, true).pluck(:preferences)
-      else
-        permission = ::Permission.lookup(name: local_key)
-        break if permission&.active == false
-
-        permissions = ::Permission.with_parents(local_key)
-        list = ::Permission.select('preferences').joins(:roles).where('roles.id IN (?) AND roles.active = ? AND permissions.name IN (?) AND permissions.active = ?', role_ids, true, permissions, true).pluck(:preferences)
-      end
-      return true if list.present?
-    end
-    false
-  end
-
-=begin
-
 returns all accessable permission ids of user
 
   user = User.find(123)
@@ -459,7 +395,7 @@ returns
   def permissions_with_child_ids
     where = ''
     where_bind = [true]
-    permissions.each_key do |permission_name|
+    permissions.pluck(:name).each do |permission_name|
       where += ' OR ' if where != ''
       where += 'permissions.name = ? OR permissions.name LIKE ?'
       where_bind.push permission_name
@@ -591,7 +527,7 @@ returns
     return if !user
 
     # reset password
-    user.update!(password: password)
+    user.update!(password: password, verified: true)
 
     # delete token
     Token.find_by(action: 'PasswordReset', name: token).destroy
@@ -897,7 +833,7 @@ try to find correct name
 
     # -no name- "firstname.lastname@example.com"
     if string.blank? && email.present?
-      scan = email.scan(/^(.+?)\.(.+?)\@.+?$/)
+      scan = email.scan(/^(.+?)\.(.+?)@.+?$/)
       if scan[0].present?
         if scan[0][0].present?
           firstname = scan[0][0].strip
@@ -916,9 +852,9 @@ try to find correct name
     firstname.blank? && lastname.blank?
   end
 
-  # get locale of user or system if user's own is not set
+  # get locale identifier of user or system if user's own is not set
   def locale
-    preferences.fetch(:locale) { Setting.get('locale_default') }
+    preferences.fetch(:locale) { Locale.default }
   end
 
   private
@@ -962,7 +898,7 @@ try to find correct name
 
     email_address_validation = EmailAddressValidation.new(email)
     if !email_address_validation.valid_format?
-      raise Exceptions::UnprocessableEntity, 'Invalid email'
+      raise Exceptions::UnprocessableEntity, "Invalid email '#{email}'"
     end
 
     true
@@ -1026,9 +962,9 @@ try to find correct name
     return true if email.blank?
     return true if !changes
     return true if !changes['email']
-    return true if !User.find_by(email: email.downcase.strip)
+    return true if !User.exists?(email: email.downcase.strip)
 
-    raise Exceptions::UnprocessableEntity, 'Email address is already used for other user.'
+    raise Exceptions::UnprocessableEntity, "Email address '#{email.downcase.strip}' is already used for other user."
   end
 
   def validate_roles(role)
@@ -1051,7 +987,7 @@ try to find correct name
     raise Exceptions::UnprocessableEntity, 'out of office end is required' if out_of_office_end_at.blank?
     raise Exceptions::UnprocessableEntity, 'out of office end is before start' if out_of_office_start_at > out_of_office_end_at
     raise Exceptions::UnprocessableEntity, 'out of office replacement user is required' if out_of_office_replacement_id.blank?
-    raise Exceptions::UnprocessableEntity, 'out of office no such replacement user' if !User.find_by(id: out_of_office_replacement_id)
+    raise Exceptions::UnprocessableEntity, 'out of office no such replacement user' if !User.exists?(id: out_of_office_replacement_id)
 
     true
   end
@@ -1063,9 +999,10 @@ try to find correct name
     return true if !preferences[:notification_sound]
     return true if !preferences[:notification_sound][:enabled]
 
-    if preferences[:notification_sound][:enabled] == 'true'
+    case preferences[:notification_sound][:enabled]
+    when 'true'
       preferences[:notification_sound][:enabled] = true
-    elsif preferences[:notification_sound][:enabled] == 'false'
+    when 'false'
       preferences[:notification_sound][:enabled] = false
     end
     class_name = preferences[:notification_sound][:enabled].class.to_s

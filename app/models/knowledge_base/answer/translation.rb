@@ -16,7 +16,7 @@ class KnowledgeBase::Answer::Translation < ApplicationModel
   belongs_to                    :content, class_name: 'KnowledgeBase::Answer::Translation::Content', inverse_of: :translation, dependent: :destroy
   accepts_nested_attributes_for :content, update_only: true
 
-  validates :title,        presence: true,            length: { maximum: 250 }
+  validates :title,        presence: true, length: { maximum: 250 }
   validates :content,      presence: true
   validates :kb_locale_id, uniqueness: { scope: :answer_id }
 
@@ -54,9 +54,10 @@ class KnowledgeBase::Answer::Translation < ApplicationModel
   def search_index_attribute_lookup
     attrs = super
 
-    attrs['title']    = ActionController::Base.helpers.strip_tags attrs['title']
-    attrs['content']  = content.search_index_attribute_lookup if content
-    attrs['scope_id'] = answer.category_id
+    attrs['title']      = ActionController::Base.helpers.strip_tags attrs['title']
+    attrs['content']    = content.search_index_attribute_lookup if content
+    attrs['scope_id']   = answer.category_id
+    attrs['attachment'] = answer.attachments_for_search_index_attribute_lookup
 
     attrs
   end

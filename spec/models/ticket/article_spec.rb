@@ -126,6 +126,24 @@ RSpec.describe Ticket::Article, type: :model do
             <a href="https://example.com" rel="nofollow noreferrer noopener" target="_blank" title="https://example.com">foo</a>
           SANITIZED
         end
+
+        context 'when a sanitization attribute is present' do
+          # ATTENTION: We use `target` here because re-sanitization would change the order of attributes
+          let(:body) { '<a href="https://example.com" target="_blank">foo</a>' }
+
+          it 'adds sanitization attributes' do
+            expect(article.body).to eq(<<~SANITIZED.chomp)
+              <a href="https://example.com" rel="nofollow noreferrer noopener" target="_blank" title="https://example.com">foo</a>
+            SANITIZED
+          end
+
+          context 'when changing an unrelated attribute' do
+
+            it "doesn't re-sanitizes the body" do
+              expect { article.update!(message_id: 'test') }.not_to change { article.reload.body }
+            end
+          end
+        end
       end
 
       context 'for all cases above, combined' do
@@ -256,6 +274,16 @@ RSpec.describe Ticket::Article, type: :model do
           end
         end
 
+        context 'for import' do
+          before do
+            Setting.set('import_mode', true)
+          end
+
+          it 'truncates body to 1.5 million chars' do
+            expect(article.body.length).to eq(1_500_000)
+          end
+        end
+
         context 'for "test.postmaster" thread', application_handle: 'test.postmaster' do
           it 'truncates body to 1.5 million chars' do
             expect(article.body.length).to eq(1_500_000)
@@ -317,7 +345,7 @@ RSpec.describe Ticket::Article, type: :model do
           .to('') # Tweet in VCR cassette is addressed to no one
       end
 
-      it 'sets #message_id to tweet ID (https://twitter.com/statuses/<id>)' do
+      it 'sets #message_id to tweet ID (https://twitter.com/_/status/<id>)' do
         expect(&run_bg_jobs)
           .to change { twitter_article.reload.message_id }
           .to('1069382411899817990')
@@ -332,7 +360,7 @@ RSpec.describe Ticket::Article, type: :model do
           .to include(
             'name'   => 'on Twitter',
             'target' => '_blank',
-            'url'    => "https://twitter.com/statuses/#{twitter_article.message_id}"
+            'url'    => "https://twitter.com/_/status/#{twitter_article.message_id}"
           )
       end
 

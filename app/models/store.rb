@@ -86,9 +86,9 @@ returns
   def self.list(data)
     # search
     store_object_id = Store::Object.lookup(name: data[:object])
-    stores = Store.where(store_object_id: store_object_id, o_id: data[:o_id].to_i)
+    Store.where(store_object_id: store_object_id, o_id: data[:o_id].to_i)
                   .order(created_at: :asc)
-    stores
+
   end
 
 =begin
@@ -253,13 +253,21 @@ returns
     file.provider
   end
 
+  RESIZABLE_MIME_REGEXP = %r{image/(jpeg|jpg|png)}i.freeze
+
+  def self.resizable_mime?(input)
+    input.match? RESIZABLE_MIME_REGEXP
+  end
+
   private
 
   def generate_previews
     return true if Setting.get('import_mode')
 
-    resizable = preferences.slice('Mime-Type', 'Content-Type', 'mime_type', 'content_type')
-                           .values.grep(%r{image/(jpeg|jpg|png)}i).any?
+    resizable = preferences
+                  .slice('Mime-Type', 'Content-Type', 'mime_type', 'content_type')
+                  .values
+                  .any? { |mime| self.class.resizable_mime?(mime) }
 
     begin
       if resizable
@@ -318,6 +326,8 @@ returns
     return true if oversized_preferences_removed_by_key?(100)
     return true if oversized_preferences_removed_by_content?(300)
     return true if oversized_preferences_removed_by_key?(60)
+    return true if oversized_preferences_removed_by_content?(150)
+    return true if oversized_preferences_removed_by_key?(30)
 
     true
   end

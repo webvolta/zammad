@@ -30,12 +30,21 @@ RSpec.describe Channel::EmailParser, type: :model do
         end
       end
     end
+
+    describe 'handling Japanese email in ISO-2022-JP encoding' do
+      let(:mail_file) { Rails.root.join('test/data/mail/mail091.box') }
+      let(:raw_mail)  { File.read(mail_file) }
+      let(:parsed)    { described_class.new.parse(raw_mail) }
+
+      it { expect(parsed['body']).to eq '<div>このアドレスへのメルマガを解除してください。</div>' }
+      it { expect(parsed['subject']).to eq 'メルマガ解除' }
+    end
   end
 
   describe '#process' do
-    let(:raw_mail)  { File.read(mail_file) }
+    let(:raw_mail) { File.read(mail_file) }
 
-    before { Trigger.destroy_all }  # triggers may cause additional articles to be created
+    before { Trigger.destroy_all } # triggers may cause additional articles to be created
 
     describe 'auto-creating new users' do
       context 'with one unrecognized email address' do
@@ -116,7 +125,7 @@ RSpec.describe Channel::EmailParser, type: :model do
         end
 
         context 'when from address matches an existing agent' do
-          let!(:agent) { create(:agent_user, email: 'foo@bar.com') }
+          let!(:agent) { create(:agent, email: 'foo@bar.com') }
 
           it 'sets article.sender to "Agent"' do
             described_class.new.process({}, raw_mail)
@@ -132,7 +141,7 @@ RSpec.describe Channel::EmailParser, type: :model do
         end
 
         context 'when from address matches an existing customer' do
-          let!(:customer) { create(:customer_user, email: 'foo@bar.com') }
+          let!(:customer) { create(:customer, email: 'foo@bar.com') }
 
           it 'sets article.sender to "Customer"' do
             described_class.new.process({}, raw_mail)
@@ -152,6 +161,43 @@ RSpec.describe Channel::EmailParser, type: :model do
             described_class.new.process({}, raw_mail)
 
             expect(Ticket.last.articles.first.sender.name).to eq('Customer')
+          end
+        end
+      end
+
+      context 'when email contains x-headers' do
+        let(:raw_mail) { <<~RAW.chomp }
+          From: foo@bar.com
+          To: baz@qux.net
+          Subject: Foo
+          X-Zammad-Ticket-priority: 3 high
+
+          Lorem ipsum dolor
+        RAW
+
+        context 'when channel is not trusted' do
+          let(:channel) { create(:channel, options: { inbound: { trusted: false } }) }
+
+          it 'does not change the priority of the ticket (no channel)' do
+            described_class.new.process({}, raw_mail)
+
+            expect(Ticket.last.priority.name).to eq('2 normal')
+          end
+
+          it 'does not change the priority of the ticket (untrusted)' do
+            described_class.new.process(channel, raw_mail)
+
+            expect(Ticket.last.priority.name).to eq('2 normal')
+          end
+        end
+
+        context 'when channel is trusted' do
+          let(:channel) { create(:channel, options: { inbound: { trusted: true } }) }
+
+          it 'does not change the priority of the ticket' do
+            described_class.new.process(channel, raw_mail)
+
+            expect(Ticket.last.priority.name).to eq('3 high')
           end
         end
       end
@@ -689,11 +735,6 @@ RSpec.describe Channel::EmailParser, type: :model do
             include_examples 'creates a new ticket'
           end
 
-          context 'when image/jpg attachment contains ticket reference' do
-            include_context 'ticket reference in image/jpg attachment'
-            include_examples 'creates a new ticket'
-          end
-
           context 'when In-Reply-To header contains article message-id' do
             include_context 'ticket reference in In-Reply-To header'
             include_examples 'adds message to ticket'
@@ -812,8 +853,8 @@ RSpec.describe Channel::EmailParser, type: :model do
     end
 
     describe 'assigning ticket.customer' do
-      let(:agent) { create(:agent_user) }
-      let(:customer) { create(:customer_user) }
+      let(:agent) { create(:agent) }
+      let(:customer) { create(:customer) }
 
       let(:raw_mail) { <<~RAW.chomp }
         From: #{agent.email}
@@ -847,7 +888,7 @@ RSpec.describe Channel::EmailParser, type: :model do
     describe 'formatting to/from addresses' do
       # see https://github.com/zammad/zammad/issues/2198
       context 'when sender address contains spaces (#2198)' do
-        let(:mail_file) { Rails.root.join('test', 'data', 'mail', 'mail071.box') }
+        let(:mail_file) { Rails.root.join('test/data/mail/mail071.box') }
         let(:sender_email) { 'powerquadrantsystem@example.com' }
 
         it 'removes them before creating a new user' do
@@ -867,7 +908,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
       # see https://github.com/zammad/zammad/issues/2254
       context 'when sender address contains > (#2254)' do
-        let(:mail_file) { Rails.root.join('test', 'data', 'mail', 'mail076.box') }
+        let(:mail_file) { Rails.root.join('test/data/mail/mail076.box') }
         let(:sender_email) { 'millionslotteryspaintransfer@example.com' }
 
         it 'removes them before creating a new user' do
@@ -897,7 +938,7 @@ RSpec.describe Channel::EmailParser, type: :model do
       HEADER
 
       context 'for emails from an unrecognized email address' do
-        let(:message_file) { Rails.root.join('test', 'data', 'email_signature_detection', 'client_a_1.txt') }
+        let(:message_file) { Rails.root.join('test/data/email_signature_detection/client_a_1.txt') }
 
         it 'does not detect signatures' do
           described_class.new.process({}, raw_mail)
@@ -913,9 +954,9 @@ RSpec.describe Channel::EmailParser, type: :model do
           described_class.new.process({}, header + File.read(previous_message_file))
         end
 
-        let(:previous_message_file) { Rails.root.join('test', 'data', 'email_signature_detection', 'client_a_1.txt') }
+        let(:previous_message_file) { Rails.root.join('test/data/email_signature_detection/client_a_1.txt') }
 
-        let(:message_file) { Rails.root.join('test', 'data', 'email_signature_detection', 'client_a_2.txt') }
+        let(:message_file) { Rails.root.join('test/data/email_signature_detection/client_a_2.txt') }
 
         it 'sets detected signature on user (in a background job)' do
           described_class.new.process({}, raw_mail)
@@ -936,7 +977,7 @@ RSpec.describe Channel::EmailParser, type: :model do
     describe 'charset handling' do
       # see https://github.com/zammad/zammad/issues/2224
       context 'when header specifies Windows-1258 charset (#2224)' do
-        let(:mail_file) { Rails.root.join('test', 'data', 'mail', 'mail072.box') }
+        let(:mail_file) { Rails.root.join('test/data/mail/mail072.box') }
 
         it 'does not raise Encoding::ConverterNotFoundError' do
           expect { described_class.new.process({}, raw_mail) }
@@ -945,7 +986,7 @@ RSpec.describe Channel::EmailParser, type: :model do
       end
 
       context 'when attachment for follow up check contains invalid charsets (#2808)' do
-        let(:mail_file) { Rails.root.join('test', 'data', 'mail', 'mail085.box') }
+        let(:mail_file) { Rails.root.join('test/data/mail/mail085.box') }
 
         before { Setting.set('postmaster_follow_up_search_in', %w[attachment body]) }
 
@@ -959,7 +1000,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
     describe 'attachment handling' do
       context 'with header "Content-Transfer-Encoding: x-uuencode"' do
-        let(:mail_file) { Rails.root.join('test', 'data', 'mail', 'mail078-content_transfer_encoding_x_uuencode.box') }
+        let(:mail_file) { Rails.root.join('test/data/mail/mail078-content_transfer_encoding_x_uuencode.box') }
         let(:article) { described_class.new.process({}, raw_mail).second }
 
         it 'does not raise RuntimeError' do
@@ -977,13 +1018,57 @@ RSpec.describe Channel::EmailParser, type: :model do
     describe 'inline image handling' do
       # see https://github.com/zammad/zammad/issues/2486
       context 'when image is large but not resizable' do
-        let(:mail_file) { Rails.root.join('test', 'data', 'mail', 'mail079.box') }
+        let(:mail_file) { Rails.root.join('test/data/mail/mail079.box') }
         let(:attachment) { article.attachments.to_a.find { |i| i.filename == 'a.jpg' } }
         let(:article) { described_class.new.process({}, raw_mail).second }
 
         it "doesn't set resizable preference" do
           expect(attachment.filename).to eq('a.jpg')
           expect(attachment.preferences).not_to include('resizable' => true)
+        end
+      end
+    end
+
+    describe 'ServiceNow handling' do
+
+      context 'new Ticket' do
+        let(:mail_file) { Rails.root.join('test/data/mail/mail089.box') }
+
+        it 'creates an ExternalSync reference' do
+          described_class.new.process({}, raw_mail)
+
+          expect(ExternalSync.last).to have_attributes(
+            source:    'ServiceNow-example@service-now.com',
+            source_id: 'INC678439',
+            object:    'Ticket',
+            o_id:      Ticket.last.id,
+          )
+        end
+      end
+
+      context 'follow up' do
+
+        let(:mail_file) { Rails.root.join('test/data/mail/mail090.box') }
+        let(:ticket) { create(:ticket) }
+        let!(:external_sync) do
+          create(:external_sync,
+                 source:    'ServiceNow-example@service-now.com',
+                 source_id: 'INC678439',
+                 object:    'Ticket',
+                 o_id:      ticket.id,)
+        end
+
+        it 'adds Article to existing Ticket' do
+          expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.count }
+        end
+
+        context 'key insensitive sender address' do
+
+          let(:raw_mail) { super().gsub('example@service-now.com', 'Example@Service-Now.com') }
+
+          it 'adds Article to existing Ticket' do
+            expect { described_class.new.process({}, raw_mail) }.to change { ticket.reload.articles.count }
+          end
         end
       end
     end
@@ -1026,7 +1111,7 @@ RSpec.describe Channel::EmailParser, type: :model do
       let(:message_id) { raw_mail[/(?<=^(References|Message-ID): )\S*/] }
 
       context 'with future retries (delayed)' do
-        let(:mail_file) { Rails.root.join('test', 'data', 'mail', 'mail078.box') }
+        let(:mail_file) { Rails.root.join('test/data/mail/mail078.box') }
 
         context 'on a closed ticket' do
           before { ticket.update(state: Ticket::State.find_by(name: 'closed')) }
@@ -1055,7 +1140,7 @@ RSpec.describe Channel::EmailParser, type: :model do
       end
 
       context 'with no future retries (undeliverable): sample input 1' do
-        let(:mail_file) { Rails.root.join('test', 'data', 'mail', 'mail033-undelivered-mail-returned-to-sender.box') }
+        let(:mail_file) { Rails.root.join('test/data/mail/mail033-undelivered-mail-returned-to-sender.box') }
 
         context 'for original message sent by Agent' do
           it 'sets #preferences on resulting ticket to { "send-auto-responses" => false, "is-auto-reponse" => true }' do
@@ -1097,7 +1182,7 @@ RSpec.describe Channel::EmailParser, type: :model do
       end
 
       context 'with no future retries (undeliverable): sample input 2' do
-        let(:mail_file) { Rails.root.join('test', 'data', 'mail', 'mail055.box') }
+        let(:mail_file) { Rails.root.join('test/data/mail/mail055.box') }
 
         it 'finds the article referenced in the bounce message headers, then adds the bounce message to its ticket' do
           expect { described_class.new.process({}, raw_mail) }
@@ -1163,7 +1248,7 @@ RSpec.describe Channel::EmailParser, type: :model do
 
     describe 'suppressing normal Ticket::Article callbacks' do
       context 'from sender: "Agent"' do
-        let(:agent) { create(:agent_user) }
+        let(:agent) { create(:agent) }
 
         it 'does not dispatch an email on article creation' do
           expect(TicketArticleCommunicateEmailJob).not_to receive(:perform_later)
@@ -1181,67 +1266,7 @@ RSpec.describe Channel::EmailParser, type: :model do
   end
 
   describe '#compose_postmaster_reply' do
-    let(:raw_incoming_mail) { File.read(Rails.root.join('test', 'data', 'mail', 'mail010.box')) }
-
-    shared_examples 'postmaster reply' do
-      it 'composes postmaster reply' do
-        reply = described_class.new.send(:compose_postmaster_reply, raw_incoming_mail, locale)
-        expect(reply[:to]).to eq('smith@example.com')
-        expect(reply[:content_type]).to eq('text/plain')
-        expect(reply[:subject]).to eq(expected_subject)
-        expect(reply[:body]).to eq(expected_body)
-      end
-    end
-
-    context 'for English locale (en)' do
-      include_examples 'postmaster reply' do
-        let(:locale) { 'en' }
-        let(:expected_subject) { '[undeliverable] Message too large' }
-        let(:expected_body) do
-          body = <<~BODY
-            Dear Smith Sepp,
-
-            Unfortunately your email titled \"Gruß aus Oberalteich\" could not be delivered to one or more recipients.
-
-            Your message was 0.01 MB but we only accept messages up to 10 MB.
-
-            Please reduce the message size and try again. Thank you for your understanding.
-
-            Regretfully,
-
-            Postmaster of zammad.example.com
-          BODY
-          body.gsub(/\n/, "\r\n")
-        end
-      end
-    end
-
-    context 'for German locale (de)' do
-      include_examples 'postmaster reply' do
-        let(:locale) { 'de' }
-        let(:expected_subject) { '[Unzustellbar] Nachricht zu groß' }
-        let(:expected_body) do
-          body = <<~BODY
-            Hallo Smith Sepp,
-
-            Ihre E-Mail mit dem Betreff \"Gruß aus Oberalteich\" konnte nicht an einen oder mehrere Empfänger zugestellt werden.
-
-            Die Nachricht hatte eine Größe von 0.01 MB, wir akzeptieren jedoch nur E-Mails mit einer Größe von bis zu 10 MB.
-
-            Bitte reduzieren Sie die Größe Ihrer Nachricht und versuchen Sie es erneut. Vielen Dank für Ihr Verständnis.
-
-            Mit freundlichen Grüßen
-
-            Postmaster von zammad.example.com
-          BODY
-          body.gsub(/\n/, "\r\n")
-        end
-      end
-    end
-  end
-
-  describe '#compose_postmaster_reply' do
-    let(:raw_incoming_mail) { File.read(Rails.root.join('test', 'data', 'mail', 'mail010.box')) }
+    let(:raw_incoming_mail) { File.read(Rails.root.join('test/data/mail/mail010.box')) }
 
     shared_examples 'postmaster reply' do
       it 'composes postmaster reply' do

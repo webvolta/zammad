@@ -54,7 +54,7 @@ satinize html string based on whiltelist
             href_without_spaces = href.gsub(/[[:space:]]/, '')
           end
 
-          next if !href_without_spaces.downcase.start_with?('http', 'ftp', '//')
+          next if !CGI.unescape(href_without_spaces).utf8_encode(fallback: :read_as_sanitized_binary).gsub(/[[:space:]]/, '').downcase.start_with?('http', 'ftp', '//')
 
           node.set_attribute('href', href)
           node.set_attribute('rel', 'nofollow noreferrer noopener')
@@ -176,7 +176,7 @@ satinize html string based on whiltelist
         # remove attributes if not whitelisted
         node.each do |attribute, _value|
           attribute_name = attribute.downcase
-          next if attributes_whitelist[:all].include?(attribute_name) || (attributes_whitelist[node.name]&.include?(attribute_name))
+          next if attributes_whitelist[:all].include?(attribute_name) || attributes_whitelist[node.name]&.include?(attribute_name)
 
           node.delete(attribute)
         end
@@ -395,7 +395,7 @@ cleanup html string:
   end
 
   def self.cleanup_target(string, **options)
-    cleaned_string = CGI.unescape(string).utf8_encode(fallback: :read_as_sanitized_binary)
+    cleaned_string = string.utf8_encode(fallback: :read_as_sanitized_binary)
     cleaned_string = cleaned_string.gsub(/[[:space:]]/, '') if !options[:keep_spaces]
     cleaned_string = cleaned_string.strip
                                    .delete("\t\n\r\u0000")
@@ -421,8 +421,8 @@ cleanup html string:
   end
 
   def self.url_same?(url_new, url_old)
-    url_new = CGI.unescape(url_new.to_s).utf8_encode(fallback: :read_as_sanitized_binary).downcase.gsub(%r{/$}, '').gsub(/[[:space:]]|\t|\n|\r/, '').strip
-    url_old = CGI.unescape(url_old.to_s).utf8_encode(fallback: :read_as_sanitized_binary).downcase.gsub(%r{/$}, '').gsub(/[[:space:]]|\t|\n|\r/, '').strip
+    url_new = CGI.unescape(url_new.to_s).utf8_encode(fallback: :read_as_sanitized_binary).downcase.delete_suffix('/').gsub(/[[:space:]]|\t|\n|\r/, '').strip
+    url_old = CGI.unescape(url_old.to_s).utf8_encode(fallback: :read_as_sanitized_binary).downcase.delete_suffix('/').gsub(/[[:space:]]|\t|\n|\r/, '').strip
     url_new = html_decode(url_new).sub('/?', '?')
     url_old = html_decode(url_old).sub('/?', '?')
     return true if url_new == url_old

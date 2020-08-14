@@ -7,22 +7,26 @@ require 'models/concerns/has_groups_permissions_examples'
 require 'models/concerns/has_xss_sanitized_note_examples'
 require 'models/concerns/can_be_imported_examples'
 require 'models/concerns/has_object_manager_attributes_validation_examples'
+require 'models/user/has_ticket_create_screen_impact_examples'
+require 'models/user/can_lookup_search_index_attributes_examples'
 
 RSpec.describe User, type: :model do
   subject(:user) { create(:user) }
 
-  let(:customer) { create(:customer_user) }
-  let(:agent)    { create(:agent_user) }
-  let(:admin)    { create(:admin_user) }
+  let(:customer) { create(:customer) }
+  let(:agent)    { create(:agent) }
+  let(:admin)    { create(:admin) }
 
   it_behaves_like 'ApplicationModel', can_assets: { associations: :organization }
-  it_behaves_like 'HasGroups', group_access_factory: :agent_user
+  it_behaves_like 'HasGroups', group_access_factory: :agent
   it_behaves_like 'HasHistory'
-  it_behaves_like 'HasRoles', group_access_factory: :agent_user
+  it_behaves_like 'HasRoles', group_access_factory: :agent
   it_behaves_like 'HasXssSanitizedNote', model_factory: :user
   it_behaves_like 'HasGroups and Permissions', group_access_no_permission_factory: :user
   it_behaves_like 'CanBeImported'
   it_behaves_like 'HasObjectManagerAttributesValidation'
+  it_behaves_like 'HasTicketCreateScreenImpact'
+  it_behaves_like 'CanLookupSearchIndexAttributes'
 
   describe 'Class methods:' do
     describe '.authenticate' do
@@ -306,7 +310,7 @@ RSpec.describe User, type: :model do
       context 'when designated as the substitute' do
         let!(:agent_on_holiday) do
           create(
-            :agent_user,
+            :agent,
             out_of_office_start_at:       Time.current.yesterday,
             out_of_office_end_at:         Time.current.tomorrow,
             out_of_office_replacement_id: agent.id,
@@ -365,135 +369,28 @@ RSpec.describe User, type: :model do
       end
     end
 
-    describe '#access?' do
-      context 'when an admin' do
-        subject(:user) { create(:user, roles: [partial_admin_role]) }
+    describe '#permissions' do
+      let(:user) { create(:agent).tap { |u| u.roles = [u.roles.first] } }
+      let(:role) { user.roles.first }
+      let(:permissions) { role.permissions }
 
-        context 'with "admin.user" privileges' do
-          let(:partial_admin_role) do
-            create(:role).tap { |role| role.permission_grant('admin.user') }
-          end
+      it 'is a simple association getter' do
+        expect(user.permissions).to match_array(permissions)
+      end
 
-          context 'wants to read, change, or delete any user' do
-            it 'returns true' do
-              expect(admin.access?(user, 'read')).to be(true)
-              expect(admin.access?(user, 'change')).to be(true)
-              expect(admin.access?(user, 'delete')).to be(true)
-              expect(agent.access?(user, 'read')).to be(true)
-              expect(agent.access?(user, 'change')).to be(true)
-              expect(agent.access?(user, 'delete')).to be(true)
-              expect(customer.access?(user, 'read')).to be(true)
-              expect(customer.access?(user, 'change')).to be(true)
-              expect(customer.access?(user, 'delete')).to be(true)
-              expect(user.access?(user, 'read')).to be(true)
-              expect(user.access?(user, 'change')).to be(true)
-              expect(user.access?(user, 'delete')).to be(true)
-            end
-          end
-        end
+      context 'for inactive permissions' do
+        before { permissions.first.update(active: false) }
 
-        context 'without "admin.user" privileges' do
-          let(:partial_admin_role) do
-            create(:role).tap { |role| role.permission_grant('admin.tag') }
-          end
-
-          context 'wants to read any user' do
-            it 'returns true' do
-              expect(admin.access?(user, 'read')).to be(true)
-              expect(agent.access?(user, 'read')).to be(true)
-              expect(customer.access?(user, 'read')).to be(true)
-              expect(user.access?(user, 'read')).to be(true)
-            end
-          end
-
-          context 'wants to change or delete any user' do
-            it 'returns false' do
-              expect(admin.access?(user, 'change')).to be(false)
-              expect(admin.access?(user, 'delete')).to be(false)
-              expect(agent.access?(user, 'change')).to be(false)
-              expect(agent.access?(user, 'delete')).to be(false)
-              expect(customer.access?(user, 'change')).to be(false)
-              expect(customer.access?(user, 'delete')).to be(false)
-              expect(user.access?(user, 'change')).to be(false)
-              expect(user.access?(user, 'delete')).to be(false)
-            end
-          end
+        it 'omits them from the returned hash' do
+          expect(user.permissions).not_to include(permissions.first)
         end
       end
 
-      context 'when an agent' do
-        subject(:user) { create(:agent_user) }
+      context 'for permissions on inactive roles' do
+        before { role.update(active: false) }
 
-        context 'wants to read any user' do
-          it 'returns true' do
-            expect(admin.access?(user, 'read')).to be(true)
-            expect(agent.access?(user, 'read')).to be(true)
-            expect(customer.access?(user, 'read')).to be(true)
-            expect(user.access?(user, 'read')).to be(true)
-          end
-        end
-
-        context 'wants to change' do
-          context 'any admin or agent' do
-            it 'returns false' do
-              expect(admin.access?(user, 'change')).to be(false)
-              expect(agent.access?(user, 'change')).to be(false)
-              expect(user.access?(user, 'change')).to be(false)
-            end
-          end
-
-          context 'any customer' do
-            it 'returns true' do
-              expect(customer.access?(user, 'change')).to be(true)
-            end
-          end
-        end
-
-        context 'wants to delete any user' do
-          it 'returns false' do
-            expect(admin.access?(user, 'delete')).to be(false)
-            expect(agent.access?(user, 'delete')).to be(false)
-            expect(customer.access?(user, 'delete')).to be(false)
-            expect(user.access?(user, 'delete')).to be(false)
-          end
-        end
-      end
-
-      context 'when a customer' do
-        subject(:user) { create(:customer_user, :with_org) }
-
-        let(:colleague) { create(:customer_user, organization: user.organization) }
-
-        context 'wants to read' do
-          context 'any admin, agent, or customer from a different organization' do
-            it 'returns false' do
-              expect(admin.access?(user, 'read')).to be(false)
-              expect(agent.access?(user, 'read')).to be(false)
-              expect(customer.access?(user, 'read')).to be(false)
-            end
-          end
-
-          context 'any customer from the same organization' do
-            it 'returns true' do
-              expect(user.access?(user, 'read')).to be(true)
-              expect(colleague.access?(user, 'read')).to be(true)
-            end
-          end
-        end
-
-        context 'wants to change or delete any user' do
-          it 'returns false' do
-            expect(admin.access?(user, 'change')).to be(false)
-            expect(admin.access?(user, 'delete')).to be(false)
-            expect(agent.access?(user, 'change')).to be(false)
-            expect(agent.access?(user, 'delete')).to be(false)
-            expect(customer.access?(user, 'change')).to be(false)
-            expect(customer.access?(user, 'delete')).to be(false)
-            expect(colleague.access?(user, 'change')).to be(false)
-            expect(colleague.access?(user, 'delete')).to be(false)
-            expect(user.access?(user, 'change')).to be(false)
-            expect(user.access?(user, 'delete')).to be(false)
-          end
+        it 'omits them from the returned hash' do
+          expect(user.permissions).not_to include(*role.permissions)
         end
       end
     end
@@ -513,28 +410,28 @@ RSpec.describe User, type: :model do
           end
         end
 
-        context 'when given a sub-permission (i.e., child permission)' do
-          let(:subpermission) { create(:permission, name: 'foo.bar') }
+        context 'when given an active sub-permission' do
+          before { create(:permission, name: 'foo.bar') }
 
-          context 'that exists' do
-            before { subpermission }
+          it 'returns true' do
+            expect(user.permissions?('foo.bar')).to be(true)
+          end
+        end
 
-            it 'returns true' do
-              expect(user.permissions?('foo.bar')).to be(true)
+        describe 'chain-of-ancestry quirk' do
+          context 'when given an inactive sub-permission' do
+            before { create(:permission, name: 'foo.bar.baz', active: false) }
+
+            it 'returns false, even with active ancestors' do
+              expect(user.permissions?('foo.bar.baz')).to be(false)
             end
           end
 
-          context 'that is inactive' do
-            before { subpermission.update(active: false) }
+          context 'when given a sub-permission that does not exist' do
+            before { create(:permission, name: 'foo.bar', active: false) }
 
-            it 'returns false' do
-              expect(user.permissions?('foo.bar')).to be(false)
-            end
-          end
-
-          context 'that does not exist' do
-            it 'returns true' do
-              expect(user.permissions?('foo.bar')).to be(true)
+            it 'can return true, even with inactive ancestors' do
+              expect(user.permissions?('foo.bar.baz')).to be(true)
             end
           end
         end
@@ -605,7 +502,7 @@ RSpec.describe User, type: :model do
               before { permission.update(active: false) }
 
               it 'returns false' do
-                expect(user.permissions?('foo.bar')).to be(false)
+                expect(user.permissions?('foo.*')).to be(false)
               end
             end
           end
@@ -647,10 +544,20 @@ RSpec.describe User, type: :model do
       context 'with no #preferences[:locale]' do
         let(:preferences) { {} }
 
-        before { Setting.set('locale_default', 'foo') }
+        context 'with default locale' do
+          before { Setting.set('locale_default', 'foo') }
 
-        it 'returns the system-wide default locale' do
-          expect(user.locale).to eq('foo')
+          it 'returns the system-wide default locale' do
+            expect(user.locale).to eq('foo')
+          end
+        end
+
+        context 'without default locale' do
+          before { Setting.set('locale_default', nil) }
+
+          it 'returns en-us' do
+            expect(user.locale).to eq('en-us')
+          end
         end
       end
 
@@ -986,19 +893,19 @@ RSpec.describe User, type: :model do
             before { Setting.set('system_agent_limit', current_agents.count + 1) }
 
             it 'grants agent creation' do
-              expect { create(:agent_user) }
+              expect { create(:agent) }
                 .to change(current_agents, :count).by(1)
             end
 
             it 'grants role change' do
-              future_agent = create(:customer_user)
+              future_agent = create(:customer)
 
               expect { future_agent.roles = [agent_role] }
                 .to change(current_agents, :count).by(1)
             end
 
             describe 'role updates' do
-              let(:agent) { create(:agent_user) }
+              let(:agent) { create(:agent) }
 
               it 'grants update by instances' do
                 expect { agent.roles = [admin_role, agent_role] }
@@ -1021,9 +928,9 @@ RSpec.describe User, type: :model do
             it 'creation of new agents' do
               Setting.set('system_agent_limit', current_agents.count + 2)
 
-              create_list(:agent_user, 2)
+              create_list(:agent, 2)
 
-              expect { create(:agent_user) }
+              expect { create(:agent) }
                 .to raise_error(Exceptions::UnprocessableEntity)
                 .and change(current_agents, :count).by(0)
             end
@@ -1031,7 +938,7 @@ RSpec.describe User, type: :model do
             it 'prevents role change' do
               Setting.set('system_agent_limit', current_agents.count)
 
-              future_agent = create(:customer_user)
+              future_agent = create(:customer)
 
               expect { future_agent.roles = [agent_role] }
                 .to raise_error(Exceptions::UnprocessableEntity)
@@ -1045,19 +952,19 @@ RSpec.describe User, type: :model do
             before { Setting.set('system_agent_limit', (current_agents.count + 1).to_s) }
 
             it 'grants agent creation' do
-              expect { create(:agent_user) }
+              expect { create(:agent) }
                 .to change(current_agents, :count).by(1)
             end
 
             it 'grants role change' do
-              future_agent = create(:customer_user)
+              future_agent = create(:customer)
 
               expect { future_agent.roles = [agent_role] }
                 .to change(current_agents, :count).by(1)
             end
 
             describe 'role updates' do
-              let(:agent) { create(:agent_user) }
+              let(:agent) { create(:agent) }
 
               it 'grants update by instances' do
                 expect { agent.roles = [admin_role, agent_role] }
@@ -1080,9 +987,9 @@ RSpec.describe User, type: :model do
             it 'creation of new agents' do
               Setting.set('system_agent_limit', (current_agents.count + 2).to_s)
 
-              create_list(:agent_user, 2)
+              create_list(:agent, 2)
 
-              expect { create(:agent_user) }
+              expect { create(:agent) }
                 .to raise_error(Exceptions::UnprocessableEntity)
                 .and change(current_agents, :count).by(0)
             end
@@ -1090,7 +997,7 @@ RSpec.describe User, type: :model do
             it 'prevents role change' do
               Setting.set('system_agent_limit', current_agents.count.to_s)
 
-              future_agent = create(:customer_user)
+              future_agent = create(:customer)
 
               expect { future_agent.roles = [agent_role] }
                 .to raise_error(Exceptions::UnprocessableEntity)
@@ -1106,7 +1013,7 @@ RSpec.describe User, type: :model do
 
           context 'when exceeding the agent limit' do
             it 'prevents re-activation of agents' do
-              inactive_agent = create(:agent_user, active: false)
+              inactive_agent = create(:agent, active: false)
 
               expect { inactive_agent.update!(active: true) }
                 .to raise_error(Exceptions::UnprocessableEntity)
@@ -1120,7 +1027,7 @@ RSpec.describe User, type: :model do
 
           context 'when exceeding the agent limit' do
             it 'prevents re-activation of agents' do
-              inactive_agent = create(:agent_user, active: false)
+              inactive_agent = create(:agent, active: false)
 
               expect { inactive_agent.update!(active: true) }
                 .to raise_error(Exceptions::UnprocessableEntity)
@@ -1132,26 +1039,14 @@ RSpec.describe User, type: :model do
     end
 
     describe 'Touching associations on update:' do
-      subject(:user) { create(:customer_user, organization: organization) }
+      subject!(:user) { create(:customer) }
 
-      let(:organization) { create(:organization) }
-      let(:other_customer) { create(:customer_user) }
+      let!(:organization) { create(:organization) }
 
-      context 'when basic attributes are updated' do
+      context 'when a customer gets a organization' do
         it 'touches its organization' do
-          expect { user.update(firstname: 'foo') }
+          expect { user.update(organization: organization) }
             .to change { organization.reload.updated_at }
-        end
-      end
-
-      context 'when organization has 100+ other members' do
-        let!(:other_members) { create_list(:user, 100, organization: organization) }
-
-        context 'and basic attributes are updated' do
-          it 'does not touch its organization' do
-            expect { user.update(firstname: 'foo') }
-              .to not_change { organization.reload.updated_at }
-          end
         end
       end
     end

@@ -1,7 +1,7 @@
 if (!window.zammadChatTemplates) {
   window.zammadChatTemplates = {};
 }
-window.zammadChatTemplates["agent"] = function (__obj) {
+window.zammadChatTemplates["agent"] = function(__obj) {
   if (!__obj) __obj = {};
   var __out = [], __capture = function(callback) {
     var out = __out, result;
@@ -51,6 +51,170 @@ window.zammadChatTemplates["agent"] = function (__obj) {
       __out.push(__sanitize(this.agent.name));
     
       __out.push('</span>\n</span>');
+    
+    }).call(this);
+    
+  }).call(__obj);
+  __obj.safe = __objSafe, __obj.escape = __escape;
+  return __out.join('');
+};
+
+if (!window.zammadChatTemplates) {
+  window.zammadChatTemplates = {};
+}
+window.zammadChatTemplates["chat"] = function(__obj) {
+  if (!__obj) __obj = {};
+  var __out = [], __capture = function(callback) {
+    var out = __out, result;
+    __out = [];
+    callback.call(this);
+    result = __out.join('');
+    __out = out;
+    return __safe(result);
+  }, __sanitize = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else if (typeof value !== 'undefined' && value != null) {
+      return __escape(value);
+    } else {
+      return '';
+    }
+  }, __safe, __objSafe = __obj.safe, __escape = __obj.escape;
+  __safe = __obj.safe = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else {
+      if (!(typeof value !== 'undefined' && value != null)) value = '';
+      var result = new String(value);
+      result.ecoSafe = true;
+      return result;
+    }
+  };
+  if (!__escape) {
+    __escape = __obj.escape = function(value) {
+      return ('' + value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    };
+  }
+  (function() {
+    (function() {
+      __out.push('<div class="zammad-chat');
+    
+      if (this.flat) {
+        __out.push(__sanitize(' zammad-chat--flat'));
+      }
+    
+      __out.push('"');
+    
+      if (this.fontSize) {
+        __out.push(__sanitize(" style='font-size: " + this.fontSize + "'"));
+      }
+    
+      __out.push('>\n  <div class="zammad-chat-header js-chat-open"');
+    
+      if (this.background) {
+        __out.push(__sanitize(" style='background: " + this.background + "'"));
+      }
+    
+      __out.push('>\n    <div class="zammad-chat-header-controls js-chat-toggle">\n      <span class="zammad-chat-agent-status zammad-chat-is-hidden js-chat-status" data-status="online"></span>\n      <span class="zammad-chat-header-icon">\n        <svg class="zammad-chat-header-icon-open" width="13" height="7" viewBox="0 0 13 7"><path d="M10.807 7l1.4-1.428-5-4.9L6.5-.02l-.7.7-4.9 4.9 1.414 1.413L6.5 2.886 10.807 7z" fill-rule="evenodd"/></svg>\n        <svg class="zammad-chat-header-icon-close" width="13" height="13" viewBox="0 0 13 13"><path d="m2.241.12l-2.121 2.121 4.243 4.243-4.243 4.243 2.121 2.121 4.243-4.243 4.243 4.243 2.121-2.121-4.243-4.243 4.243-4.243-2.121-2.121-4.243 4.243-4.243-4.243" fill-rule="evenodd"/></svg>\n      </span>\n    </div>\n    <div class="zammad-chat-agent zammad-chat-is-hidden">\n    </div>\n    <div class="zammad-chat-welcome">\n      <svg class="zammad-chat-icon" viewBox="0 0 24 24" width="24" height="24"><path d="M2 5C2 4 3 3 4 3h16c1 0 2 1 2 2v10C22 16 21 17 20 17H4C3 17 2 16 2 15V5zM12 17l6 4v-4h-6z"/></svg>\n      <span class="zammad-chat-welcome-text">');
+    
+      __out.push(this.T(this.title));
+    
+      __out.push('</span>\n    </div>\n  </div>\n  <div class="zammad-chat-modal"></div>\n  <div class="zammad-scroll-hint is-hidden">\n    <svg class="zammad-scroll-hint-icon" width="20" height="18" viewBox="0 0 20 18"><path d="M0,2.00585866 C0,0.898053512 0.898212381,0 1.99079514,0 L18.0092049,0 C19.1086907,0 20,0.897060126 20,2.00585866 L20,11.9941413 C20,13.1019465 19.1017876,14 18.0092049,14 L1.99079514,14 C0.891309342,14 0,13.1029399 0,11.9941413 L0,2.00585866 Z M10,14 L16,18 L16,14 L10,14 Z" fill-rule="evenodd"/></svg>\n    ');
+    
+      __out.push(this.T(this.scrollHint));
+    
+      __out.push('\n  </div>\n  <div class="zammad-chat-body"></div>\n  <form class="zammad-chat-controls">\n    <div class="zammad-chat-input" rows="1" placeholder="');
+    
+      __out.push(this.T('Compose your message...'));
+    
+      __out.push('" contenteditable="true"></div>\n    <button type="submit" class="zammad-chat-button zammad-chat-send"');
+    
+      if (this.background) {
+        __out.push(__sanitize(" style='background: " + this.background + "'"));
+      }
+    
+      __out.push('>');
+    
+      __out.push(this.T('Send'));
+    
+      __out.push('</button>\n  </form>\n</div>');
+    
+    }).call(this);
+    
+  }).call(__obj);
+  __obj.safe = __objSafe, __obj.escape = __escape;
+  return __out.join('');
+};
+
+if (!window.zammadChatTemplates) {
+  window.zammadChatTemplates = {};
+}
+window.zammadChatTemplates["customer_timeout"] = function(__obj) {
+  if (!__obj) __obj = {};
+  var __out = [], __capture = function(callback) {
+    var out = __out, result;
+    __out = [];
+    callback.call(this);
+    result = __out.join('');
+    __out = out;
+    return __safe(result);
+  }, __sanitize = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else if (typeof value !== 'undefined' && value != null) {
+      return __escape(value);
+    } else {
+      return '';
+    }
+  }, __safe, __objSafe = __obj.safe, __escape = __obj.escape;
+  __safe = __obj.safe = function(value) {
+    if (value && value.ecoSafe) {
+      return value;
+    } else {
+      if (!(typeof value !== 'undefined' && value != null)) value = '';
+      var result = new String(value);
+      result.ecoSafe = true;
+      return result;
+    }
+  };
+  if (!__escape) {
+    __escape = __obj.escape = function(value) {
+      return ('' + value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    };
+  }
+  (function() {
+    (function() {
+      __out.push('<div class="zammad-chat-modal-text">\n  ');
+    
+      if (this.agent) {
+        __out.push('\n    ');
+        __out.push(this.T('Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.', this.delay, this.agent));
+        __out.push('\n  ');
+      } else {
+        __out.push('\n    ');
+        __out.push(this.T('Since you didn\'t respond in the last %s minutes your conversation got closed.', this.delay));
+        __out.push('\n  ');
+      }
+    
+      __out.push('\n  <br>\n  <div class="zammad-chat-button js-restart"');
+    
+      if (this.background) {
+        __out.push(__sanitize(" style='background: " + this.background + "'"));
+      }
+    
+      __out.push('>');
+    
+      __out.push(this.T('Start new conversation'));
+    
+      __out.push('</div>\n</div>');
     
     }).call(this);
     
@@ -363,7 +527,15 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
       inactiveTimeout: 8,
       inactiveTimeoutIntervallCheck: 0.5,
       waitingListTimeout: 4,
-      waitingListTimeoutIntervallCheck: 0.5
+      waitingListTimeoutIntervallCheck: 0.5,
+      onReady: void 0,
+      onCloseAnimationEnd: void 0,
+      onError: void 0,
+      onOpenAnimationEnd: void 0,
+      onConnectionReestablished: void 0,
+      onSessionClosed: void 0,
+      onConnectionEstablished: void 0,
+      onCssLoaded: void 0
     };
 
     ZammadChat.prototype.logPrefix = 'chat';
@@ -481,6 +653,42 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
         'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Si vous ne répondez pas dans les %s minutes, votre conversation va être fermée.',
         'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Nous sommes désolés, il faut plus de temps que prévu pour obtenir un emplacement vide. Veuillez réessayer ultérieurement ou nous envoyer un courriel. Je vous remercie!'
       },
+      'he': {
+        '<strong>Chat</strong> with us!': '<strong>שוחח</strong>איתנו!',
+        'Scroll down to see new messages': 'גלול מטה כדי לראות הודעות חדשות',
+        'Online': 'מחובר',
+        'Offline': 'מנותק',
+        'Connecting': 'מתחבר',
+        'Connection re-established': 'החיבור שוחזר',
+        'Today': 'היום',
+        'Send': 'שלח',
+        'Chat closed by %s': 'הצאט נסגר ע"י %s',
+        'Compose your message...': 'כתוב את ההודעה שלך ...',
+        'All colleagues are busy.': 'כל הנציגים תפוסים',
+        'You are on waiting list position <strong>%s</strong>.': 'מיקומך בתור <strong>%s</strong>.',
+        'Start new conversation': 'התחל שיחה חדשה',
+        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'מכיוון שלא הגבת במהלך %s דקות השיחה שלך עם <strong>%s</strong> נסגרה.',
+        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'מכיוון שלא הגבת במהלך %s הדקות האחרונות השיחה שלך נסגרה.',
+        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'מצטערים, הזמן לקבלת נציג ארוך מהרגיל. נסה שוב מאוחר יותר או שלח לנו דוא"ל. תודה!'
+      },
+      'hu': {
+        '<strong>Chat</strong> with us!': '<strong>Chatelj</strong> velünk!',
+        'Scroll down to see new messages': 'Görgess lejjebb az újabb üzenetekért',
+        'Online': 'Online',
+        'Offline': 'Offline',
+        'Connecting': 'Csatlakozás',
+        'Connection re-established': 'Újracsatlakozás',
+        'Today': 'Ma',
+        'Send': 'Küldés',
+        'Chat closed by %s': 'A beszélgetést lezárta %s',
+        'Compose your message...': 'Írj üzenetet...',
+        'All colleagues are busy.': 'Jelenleg minden kollégánk elfoglalt.',
+        'You are on waiting list position <strong>%s</strong>.': 'A várólistán a <strong>%s</strong>. pozícióban várakozol.',
+        'Start new conversation': 'Új beszélgetés indítása',
+        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Mivel %s perce nem érkezett újabb üzenet, ezért a <strong>%s</strong> kollégával folytatott beszéletést lezártuk.',
+        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Mivel %s perce nem érkezett válasz, a beszélgetés lezárult.',
+        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Sajnáljuk, de a várakozási idő hosszabb a szokásosnál. Kérlek próbáld újra, vagy írd meg kérdésed emailben. Köszönjük!'
+      },
       'nl': {
         '<strong>Chat</strong> with us!': '<strong>Chat</strong> met ons!',
         'Scroll down to see new messages': 'Scrol naar beneden om nieuwe berichten te zien',
@@ -535,6 +743,24 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
         'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Ponieważ nie odpowiedziałeś w ciągu ostatnich %s minut, Twoja rozmowa została zamknięta.',
         'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Przykro nam, ale to trwa dłużej niż się spodziewamy. Spróbuj ponownie później lub wyślij nam wiadomość e-mail. Dziękuję!'
       },
+      'pt-br': {
+        '<strong>Chat</strong> with us!': '<strong>Chat</strong> fale conosco!',
+        'Scroll down to see new messages': 'Role para baixo, para ver nosvas mensagens',
+        'Online': 'Online',
+        'Offline': 'Desconectado',
+        'Connecting': 'Conectando',
+        'Connection re-established': 'Conexão restabelecida',
+        'Today': 'Hoje',
+        'Send': 'Enviar',
+        'Chat closed by %s': 'Chat encerrado por %s',
+        'Compose your message...': 'Escreva sua mensagem...',
+        'All colleagues are busy.': 'Todos os agentes estão ocupados.',
+        'You are on waiting list position <strong>%s</strong>.': 'Você está na posição <strong>%s</strong> na fila de espera.',
+        'Start new conversation': 'Iniciar uma nova conversa',
+        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Como você não respondeu nos últimos %s minutos sua conversa com <strong>%s</strong> foi encerrada.',
+        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Como você não respondeu nos últimos %s minutos sua conversa foi encerrada.',
+        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Desculpe, mas o tempo de espera por um agente foi excedido. Tente novamente mais tarde ou nós envie um email. Obrigado'
+      },
       'zh-cn': {
         '<strong>Chat</strong> with us!': '发起<strong>即时对话</strong>!',
         'Scroll down to see new messages': '向下滚动以查看新消息',
@@ -588,6 +814,60 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
         'Since you didn\'t respond in the last %s minutes your conversation with %s got closed.': 'Поскольку вы не отвечали в течение последних %s минут, ваш разговор с %s был закрыт.',
         'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Поскольку вы не отвечали в течение последних %s минут, ваш разговор был закрыт.',
         'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'К сожалению, ожидание свободного места требует больше времени. Повторите попытку позже или отправьте нам электронное письмо. Спасибо!'
+      },
+      'sv': {
+        '<strong>Chat</strong> with us!': '<strong>Chatta</strong> med oss!',
+        'Scroll down to see new messages': 'Rulla ner för att se nya meddelanden',
+        'Online': 'Online',
+        'Offline': 'Offline',
+        'Connecting': 'Ansluter',
+        'Connection re-established': 'Anslutningen återupprättas',
+        'Today': 'I dag',
+        'Send': 'Skicka',
+        'Chat closed by %s': 'Chatt stängd av %s',
+        'Compose your message...': 'Skriv ditt meddelande...',
+        'All colleagues are busy.': 'Alla kollegor är upptagna.',
+        'You are on waiting list position <strong>%s</strong>.': 'Du är på väntelistan som position <strong>%s</strong>.',
+        'Start new conversation': 'Starta ny konversation',
+        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Eftersom du inte svarat inom %s minuterna i din konversation med <strong>%s</strong> så stängdes chatten.',
+        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Då du inte svarat inom de senaste %s minuterna så avslutades din chatt.',
+        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Vi är ledsna, det tar längre tid som förväntat att få en ledig plats. Försök igen senare eller skicka ett e-postmeddelande till oss. Tack!'
+      },
+      'no': {
+        '<strong>Chat</strong> with us!': '<strong>Chat</strong> med oss!',
+        'Scroll down to see new messages': 'Bla ned for å se nye meldinger',
+        'Online': 'Pålogget',
+        'Offline': 'Avlogget',
+        'Connecting': 'Koble til',
+        'Connection re-established': 'Tilkoblingen er gjenopprettet',
+        'Today': 'I dag',
+        'Send': 'Send',
+        'Chat closed by %s': 'Chat avsluttes om %s',
+        'Compose your message...': 'Skriv din melding...',
+        'All colleagues are busy.': 'Alle våre kolleger er for øyeblikket opptatt.',
+        'You are on waiting list position <strong>%s</strong>.': 'Du står nå i kø og er nr. <strong>%s</strong> på ventelisten.',
+        'Start new conversation': 'Start en ny samtale',
+        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Ettersom du ikke har respondert i løpet av de siste %s minuttene av samtalen, vil samtalen med  <strong>%s</strong> nå avsluttes.',
+        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Ettersom du ikke har respondert i løpet av de siste %s minuttene, har samtalen nå blitt avsluttet.',
+        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Vi beklager, men det tar lengre tid enn vanlig å få en ledig plass i vår chat. Vennligst prøv igjen på et senere tidspunkt eller send oss en e-post. Tusen takk!'
+      },
+      'nb': {
+        '<strong>Chat</strong> with us!': '<strong>Chat</strong> med oss!',
+        'Scroll down to see new messages': 'Bla ned for å se nye meldinger',
+        'Online': 'Pålogget',
+        'Offline': 'Avlogget',
+        'Connecting': 'Koble til',
+        'Connection re-established': 'Tilkoblingen er gjenopprettet',
+        'Today': 'I dag',
+        'Send': 'Send',
+        'Chat closed by %s': 'Chat avsluttes om %s',
+        'Compose your message...': 'Skriv din melding...',
+        'All colleagues are busy.': 'Alle våre kolleger er for øyeblikket opptatt.',
+        'You are on waiting list position <strong>%s</strong>.': 'Du står nå i kø og er nr. <strong>%s</strong> på ventelisten.',
+        'Start new conversation': 'Start en ny samtale',
+        'Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.': 'Ettersom du ikke har respondert i løpet av de siste %s minuttene av samtalen, vil samtalen med  <strong>%s</strong> nå avsluttes.',
+        'Since you didn\'t respond in the last %s minutes your conversation got closed.': 'Ettersom du ikke har respondert i løpet av de siste %s minuttene, har samtalen nå blitt avsluttet.',
+        'We are sorry, it takes longer as expected to get an empty slot. Please try again later or send us an email. Thank you!': 'Vi beklager, men det tar lengre tid enn vanlig å få en ledig plass i vår chat. Vennligst prøv igjen på et senere tidspunkt eller send oss en e-post. Tusen takk!'
       }
     };
 
@@ -660,11 +940,11 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
       this.onQueue = bind(this.onQueue, this);
       this.onQueueScreen = bind(this.onQueueScreen, this);
       this.onWebSocketClose = bind(this.onWebSocketClose, this);
-      this.onCloseTransitionend = bind(this.onCloseTransitionend, this);
+      this.onCloseAnimationEnd = bind(this.onCloseAnimationEnd, this);
       this.close = bind(this.close, this);
       this.toggle = bind(this.toggle, this);
       this.sessionClose = bind(this.sessionClose, this);
-      this.onOpenTransitionend = bind(this.onOpenTransitionend, this);
+      this.onOpenAnimationEnd = bind(this.onOpenAnimationEnd, this);
       this.open = bind(this.open, this);
       this.renderMessage = bind(this.renderMessage, this);
       this.receiveMessage = bind(this.receiveMessage, this);
@@ -739,10 +1019,14 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
     };
 
     ZammadChat.prototype.render = function() {
+      var btn;
       if (!this.el || !document.querySelector('.zammad-chat')) {
         this.renderBase();
       }
-      document.querySelector("." + this.options.buttonClass).classList.add(this.inactiveClass);
+      btn = document.querySelector("." + this.options.buttonClass);
+      if (btn) {
+        btn.classList.add(this.inactiveClass);
+      }
       this.setAgentOnlineState('online');
       this.log.debug('widget rendered');
       this.startTimeoutObservers();
@@ -823,7 +1107,7 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
               result = dataUrl;
               img = new Image();
               img.style.width = '100%';
-              img.style.maxWidth = width(+'px');
+              img.style.maxWidth = width + 'px';
               img.src = result;
               if (document.caretPositionFromPoint) {
                 pos = document.caretPositionFromPoint(x, y);
@@ -874,7 +1158,7 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
                 }
                 img = new Image();
                 img.style.width = '100%';
-                img.style.maxWidth = width(+'px');
+                img.style.maxWidth = width + 'px';
                 img.src = dataUrl;
                 return document.execCommand('insertHTML', false, img);
               };
@@ -1075,12 +1359,15 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
     };
 
     ZammadChat.prototype.onReady = function() {
-      var btn;
+      var base, btn;
       this.log.debug('widget ready for use');
       btn = document.querySelector("." + this.options.buttonClass);
       if (btn) {
         btn.addEventListener('click', this.open);
         btn.classList.remove(this.inactiveClass);
+      }
+      if (typeof (base = this.options).onReady === "function") {
+        base.onReady();
       }
       if (this.options.show) {
         return this.show();
@@ -1088,19 +1375,24 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
     };
 
     ZammadChat.prototype.onError = function(message) {
+      var base, btn;
       this.log.debug(message);
       this.addStatus(message);
-      document.querySelector("." + this.options.buttonClass).classList.add('zammad-chat-is-hidden');
+      btn = document.querySelector("." + this.options.buttonClass);
+      if (btn) {
+        btn.classList.add('zammad-chat-is-hidden');
+      }
       if (this.isOpen) {
         this.disableInput();
-        return this.destroy({
+        this.destroy({
           remove: false
         });
       } else {
-        return this.destroy({
+        this.destroy({
           remove: true
         });
       }
+      return typeof (base = this.options).onError === "function" ? base.onError(message) : void 0;
     };
 
     ZammadChat.prototype.onReopenSession = function(data) {
@@ -1229,7 +1521,7 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
       this.el.style.transform = "translateY(" + remainerHeight + "px)";
       this.el.clientHeight;
       if (!this.sessionId) {
-        this.el.addEventListener('transitionend', this.onOpenTransitionend);
+        this.el.addEventListener('transitionend', this.onOpenAnimationEnd);
         this.el.classList.add('zammad-chat--animate');
         this.el.clientHeight;
         this.el.style.transform = '';
@@ -1238,17 +1530,19 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
         });
       } else {
         this.el.style.transform = '';
-        return this.onOpenTransitionend();
+        return this.onOpenAnimationEnd();
       }
     };
 
-    ZammadChat.prototype.onOpenTransitionend = function() {
-      this.el.removeEventListener('transitionend', this.onOpenTransitionend);
+    ZammadChat.prototype.onOpenAnimationEnd = function() {
+      var base;
+      this.el.removeEventListener('transitionend', this.onOpenAnimationEnd);
       this.el.classList.remove('zammad-chat--animate');
       this.idleTimeout.stop();
       if (this.isFullscreen) {
-        return this.disableScrollOnRoot();
+        this.disableScrollOnRoot();
       }
+      return typeof (base = this.options).onOpenAnimationEnd === "function" ? base.onOpenAnimationEnd() : void 0;
     };
 
     ZammadChat.prototype.sessionClose = function() {
@@ -1294,14 +1588,15 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
         this.enableScrollOnRoot();
       }
       remainerHeight = this.el.clientHeight - this.el.querySelector('.zammad-chat-header').offsetHeight;
-      this.el.addEventListener('transitionend', this.onCloseTransitionend);
+      this.el.addEventListener('transitionend', this.onCloseAnimationEnd);
       this.el.classList.add('zammad-chat--animate');
       document.offsetHeight;
       return this.el.style.transform = "translateY(" + remainerHeight + "px)";
     };
 
-    ZammadChat.prototype.onCloseTransitionend = function() {
-      this.el.removeEventListener('transitionend', this.onCloseTransitionend);
+    ZammadChat.prototype.onCloseAnimationEnd = function() {
+      var base;
+      this.el.removeEventListener('transitionend', this.onCloseAnimationEnd);
       this.el.classList.remove('zammad-chat-is-open', 'zammad-chat--animate');
       this.el.style.transform = '';
       this.showLoader();
@@ -1309,6 +1604,9 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
       this.el.querySelector('.zammad-chat-agent').classList.add('zammad-chat-is-hidden');
       this.el.querySelector('.zammad-chat-agent-status').classList.add('zammad-chat-is-hidden');
       this.isOpen = false;
+      if (typeof (base = this.options).onCloseAnimationEnd === "function") {
+        base.onCloseAnimationEnd();
+      }
       return this.io.reconnect();
     };
 
@@ -1512,16 +1810,20 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
     };
 
     ZammadChat.prototype.onConnectionReestablished = function() {
+      var base;
       this.lastAddedType = 'status';
       this.setAgentOnlineState('online');
-      return this.addStatus(this.T('Connection re-established'));
+      this.addStatus(this.T('Connection re-established'));
+      return typeof (base = this.options).onConnectionReestablished === "function" ? base.onConnectionReestablished() : void 0;
     };
 
     ZammadChat.prototype.onSessionClosed = function(data) {
+      var base;
       this.addStatus(this.T('Chat closed by %s', data.realname));
       this.disableInput();
       this.setAgentOnlineState('offline');
-      return this.inactiveTimeout.stop();
+      this.inactiveTimeout.stop();
+      return typeof (base = this.options).onSessionClosed === "function" ? base.onSessionClosed(data) : void 0;
     };
 
     ZammadChat.prototype.setSessionId = function(id) {
@@ -1534,6 +1836,7 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
     };
 
     ZammadChat.prototype.onConnectionEstablished = function(data) {
+      var base;
       if (this.onInitialQueueDelayId) {
         clearTimeout(this.onInitialQueueDelayId);
       }
@@ -1559,7 +1862,8 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
       this.setAgentOnlineState('online');
       this.waitingListTimeout.stop();
       this.idleTimeout.stop();
-      return this.inactiveTimeout.start();
+      this.inactiveTimeout.start();
+      return typeof (base = this.options).onConnectionEstablished === "function" ? base.onConnectionEstablished(data) : void 0;
     };
 
     ZammadChat.prototype.showCustomerTimeout = function() {
@@ -1627,10 +1931,12 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
     };
 
     ZammadChat.prototype.onCssLoaded = function() {
+      var base;
       this.cssLoaded = true;
       if (this.socketReady) {
-        return this.onReady();
+        this.onReady();
       }
+      return typeof (base = this.options).onCssLoaded === "function" ? base.onCssLoaded() : void 0;
     };
 
     ZammadChat.prototype.startTimeoutObservers = function() {
@@ -1687,7 +1993,7 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
     };
 
     ZammadChat.prototype.enableScrollOnRoot = function() {
-      this.scrollRoot.scrollTop = this.rootScrollOffset(+'px');
+      this.scrollRoot.scrollTop = this.rootScrollOffset;
       this.scrollRoot.style.overflow = '';
       return this.scrollRoot.style.position = '';
     };
@@ -1953,171 +2259,7 @@ var extend = function(child, parent) { for (var key in parent) { if (hasProp.cal
 if (!window.zammadChatTemplates) {
   window.zammadChatTemplates = {};
 }
-window.zammadChatTemplates["chat"] = function (__obj) {
-  if (!__obj) __obj = {};
-  var __out = [], __capture = function(callback) {
-    var out = __out, result;
-    __out = [];
-    callback.call(this);
-    result = __out.join('');
-    __out = out;
-    return __safe(result);
-  }, __sanitize = function(value) {
-    if (value && value.ecoSafe) {
-      return value;
-    } else if (typeof value !== 'undefined' && value != null) {
-      return __escape(value);
-    } else {
-      return '';
-    }
-  }, __safe, __objSafe = __obj.safe, __escape = __obj.escape;
-  __safe = __obj.safe = function(value) {
-    if (value && value.ecoSafe) {
-      return value;
-    } else {
-      if (!(typeof value !== 'undefined' && value != null)) value = '';
-      var result = new String(value);
-      result.ecoSafe = true;
-      return result;
-    }
-  };
-  if (!__escape) {
-    __escape = __obj.escape = function(value) {
-      return ('' + value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    };
-  }
-  (function() {
-    (function() {
-      __out.push('<div class="zammad-chat');
-    
-      if (this.flat) {
-        __out.push(__sanitize(' zammad-chat--flat'));
-      }
-    
-      __out.push('"');
-    
-      if (this.fontSize) {
-        __out.push(__sanitize(" style='font-size: " + this.fontSize + "'"));
-      }
-    
-      __out.push('>\n  <div class="zammad-chat-header js-chat-open"');
-    
-      if (this.background) {
-        __out.push(__sanitize(" style='background: " + this.background + "'"));
-      }
-    
-      __out.push('>\n    <div class="zammad-chat-header-controls js-chat-toggle">\n      <span class="zammad-chat-agent-status zammad-chat-is-hidden js-chat-status" data-status="online"></span>\n      <span class="zammad-chat-header-icon">\n        <svg class="zammad-chat-header-icon-open" width="13" height="7" viewBox="0 0 13 7"><path d="M10.807 7l1.4-1.428-5-4.9L6.5-.02l-.7.7-4.9 4.9 1.414 1.413L6.5 2.886 10.807 7z" fill-rule="evenodd"/></svg>\n        <svg class="zammad-chat-header-icon-close" width="13" height="13" viewBox="0 0 13 13"><path d="m2.241.12l-2.121 2.121 4.243 4.243-4.243 4.243 2.121 2.121 4.243-4.243 4.243 4.243 2.121-2.121-4.243-4.243 4.243-4.243-2.121-2.121-4.243 4.243-4.243-4.243" fill-rule="evenodd"/></svg>\n      </span>\n    </div>\n    <div class="zammad-chat-agent zammad-chat-is-hidden">\n    </div>\n    <div class="zammad-chat-welcome">\n      <svg class="zammad-chat-icon" viewBox="0 0 24 24" width="24" height="24"><path d="M2 5C2 4 3 3 4 3h16c1 0 2 1 2 2v10C22 16 21 17 20 17H4C3 17 2 16 2 15V5zM12 17l6 4v-4h-6z"/></svg>\n      <span class="zammad-chat-welcome-text">');
-    
-      __out.push(this.T(this.title));
-    
-      __out.push('</span>\n    </div>\n  </div>\n  <div class="zammad-chat-modal"></div>\n  <div class="zammad-scroll-hint is-hidden">\n    <svg class="zammad-scroll-hint-icon" width="20" height="18" viewBox="0 0 20 18"><path d="M0,2.00585866 C0,0.898053512 0.898212381,0 1.99079514,0 L18.0092049,0 C19.1086907,0 20,0.897060126 20,2.00585866 L20,11.9941413 C20,13.1019465 19.1017876,14 18.0092049,14 L1.99079514,14 C0.891309342,14 0,13.1029399 0,11.9941413 L0,2.00585866 Z M10,14 L16,18 L16,14 L10,14 Z" fill-rule="evenodd"/></svg>\n    ');
-    
-      __out.push(this.T(this.scrollHint));
-    
-      __out.push('\n  </div>\n  <div class="zammad-chat-body"></div>\n  <form class="zammad-chat-controls">\n    <div class="zammad-chat-input" rows="1" placeholder="');
-    
-      __out.push(this.T('Compose your message...'));
-    
-      __out.push('" contenteditable="true"></div>\n    <button type="submit" class="zammad-chat-button zammad-chat-send"');
-    
-      if (this.background) {
-        __out.push(__sanitize(" style='background: " + this.background + "'"));
-      }
-    
-      __out.push('>');
-    
-      __out.push(this.T('Send'));
-    
-      __out.push('</button>\n  </form>\n</div>');
-    
-    }).call(this);
-    
-  }).call(__obj);
-  __obj.safe = __objSafe, __obj.escape = __escape;
-  return __out.join('');
-};
-
-if (!window.zammadChatTemplates) {
-  window.zammadChatTemplates = {};
-}
-window.zammadChatTemplates["customer_timeout"] = function (__obj) {
-  if (!__obj) __obj = {};
-  var __out = [], __capture = function(callback) {
-    var out = __out, result;
-    __out = [];
-    callback.call(this);
-    result = __out.join('');
-    __out = out;
-    return __safe(result);
-  }, __sanitize = function(value) {
-    if (value && value.ecoSafe) {
-      return value;
-    } else if (typeof value !== 'undefined' && value != null) {
-      return __escape(value);
-    } else {
-      return '';
-    }
-  }, __safe, __objSafe = __obj.safe, __escape = __obj.escape;
-  __safe = __obj.safe = function(value) {
-    if (value && value.ecoSafe) {
-      return value;
-    } else {
-      if (!(typeof value !== 'undefined' && value != null)) value = '';
-      var result = new String(value);
-      result.ecoSafe = true;
-      return result;
-    }
-  };
-  if (!__escape) {
-    __escape = __obj.escape = function(value) {
-      return ('' + value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    };
-  }
-  (function() {
-    (function() {
-      __out.push('<div class="zammad-chat-modal-text">\n  ');
-    
-      if (this.agent) {
-        __out.push('\n    ');
-        __out.push(this.T('Since you didn\'t respond in the last %s minutes your conversation with <strong>%s</strong> got closed.', this.delay, this.agent));
-        __out.push('\n  ');
-      } else {
-        __out.push('\n    ');
-        __out.push(this.T('Since you didn\'t respond in the last %s minutes your conversation got closed.', this.delay));
-        __out.push('\n  ');
-      }
-    
-      __out.push('\n  <br>\n  <div class="zammad-chat-button js-restart"');
-    
-      if (this.background) {
-        __out.push(__sanitize(" style='background: " + this.background + "'"));
-      }
-    
-      __out.push('>');
-    
-      __out.push(this.T('Start new conversation'));
-    
-      __out.push('</div>\n</div>');
-    
-    }).call(this);
-    
-  }).call(__obj);
-  __obj.safe = __objSafe, __obj.escape = __escape;
-  return __out.join('');
-};
-
-if (!window.zammadChatTemplates) {
-  window.zammadChatTemplates = {};
-}
-window.zammadChatTemplates["loader"] = function (__obj) {
+window.zammadChatTemplates["loader"] = function(__obj) {
   if (!__obj) __obj = {};
   var __out = [], __capture = function(callback) {
     var out = __out, result;
@@ -2172,7 +2314,7 @@ window.zammadChatTemplates["loader"] = function (__obj) {
 if (!window.zammadChatTemplates) {
   window.zammadChatTemplates = {};
 }
-window.zammadChatTemplates["message"] = function (__obj) {
+window.zammadChatTemplates["message"] = function(__obj) {
   if (!__obj) __obj = {};
   var __out = [], __capture = function(callback) {
     var out = __out, result;
@@ -2239,7 +2381,7 @@ window.zammadChatTemplates["message"] = function (__obj) {
 if (!window.zammadChatTemplates) {
   window.zammadChatTemplates = {};
 }
-window.zammadChatTemplates["status"] = function (__obj) {
+window.zammadChatTemplates["status"] = function(__obj) {
   if (!__obj) __obj = {};
   var __out = [], __capture = function(callback) {
     var out = __out, result;
@@ -2294,7 +2436,7 @@ window.zammadChatTemplates["status"] = function (__obj) {
 if (!window.zammadChatTemplates) {
   window.zammadChatTemplates = {};
 }
-window.zammadChatTemplates["timestamp"] = function (__obj) {
+window.zammadChatTemplates["timestamp"] = function(__obj) {
   if (!__obj) __obj = {};
   var __out = [], __capture = function(callback) {
     var out = __out, result;
@@ -2353,7 +2495,7 @@ window.zammadChatTemplates["timestamp"] = function (__obj) {
 if (!window.zammadChatTemplates) {
   window.zammadChatTemplates = {};
 }
-window.zammadChatTemplates["typingIndicator"] = function (__obj) {
+window.zammadChatTemplates["typingIndicator"] = function(__obj) {
   if (!__obj) __obj = {};
   var __out = [], __capture = function(callback) {
     var out = __out, result;
@@ -2404,7 +2546,7 @@ window.zammadChatTemplates["typingIndicator"] = function (__obj) {
 if (!window.zammadChatTemplates) {
   window.zammadChatTemplates = {};
 }
-window.zammadChatTemplates["waiting"] = function (__obj) {
+window.zammadChatTemplates["waiting"] = function(__obj) {
   if (!__obj) __obj = {};
   var __out = [], __capture = function(callback) {
     var out = __out, result;
@@ -2463,7 +2605,7 @@ window.zammadChatTemplates["waiting"] = function (__obj) {
 if (!window.zammadChatTemplates) {
   window.zammadChatTemplates = {};
 }
-window.zammadChatTemplates["waiting_list_timeout"] = function (__obj) {
+window.zammadChatTemplates["waiting_list_timeout"] = function(__obj) {
   if (!__obj) __obj = {};
   var __out = [], __capture = function(callback) {
     var out = __out, result;

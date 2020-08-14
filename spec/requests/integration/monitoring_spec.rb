@@ -2,14 +2,14 @@ require 'rails_helper'
 
 RSpec.describe 'Monitoring', type: :request do
 
-  let!(:admin_user) do
-    create(:admin_user, groups: Group.all)
+  let!(:admin) do
+    create(:admin, groups: Group.all)
   end
-  let!(:agent_user) do
-    create(:agent_user, groups: Group.all)
+  let!(:agent) do
+    create(:agent, groups: Group.all)
   end
-  let!(:customer_user) do
-    create(:customer_user)
+  let!(:customer) do
+    create(:customer)
   end
   let!(:token) do
     SecureRandom.urlsafe_base64(64)
@@ -27,7 +27,7 @@ RSpec.describe 'Monitoring', type: :request do
       channel.last_log_out = nil
       channel.save!
     end
-    dir = Rails.root.join('tmp', 'unprocessable_mail')
+    dir = Rails.root.join('tmp/unprocessable_mail')
     Dir.glob("#{dir}/*.eml") do |entry|
       File.delete(entry)
     end
@@ -128,6 +128,7 @@ RSpec.describe 'Monitoring', type: :request do
 
       expect(json_response).to be_a_kind_of(Hash)
       expect(json_response['error']).to be_falsey
+      expect(json_response['issues']).to eq([])
       expect(json_response['healthy']).to eq(true)
       expect(json_response['message']).to eq('success')
 
@@ -231,7 +232,7 @@ RSpec.describe 'Monitoring', type: :request do
     it 'does monitoring with admin user' do
 
       # health_check
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       get '/api/v1/monitoring/health_check', params: {}, as: :json
       expect(response).to have_http_status(:ok)
 
@@ -264,7 +265,7 @@ RSpec.describe 'Monitoring', type: :request do
     it 'does monitoring with agent user' do
 
       # health_check
-      authenticated_as(agent_user)
+      authenticated_as(agent)
       get '/api/v1/monitoring/health_check', params: {}, as: :json
       expect(response).to have_http_status(:unauthorized)
 
@@ -300,7 +301,7 @@ RSpec.describe 'Monitoring', type: :request do
       permission.save!
 
       # health_check
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       get '/api/v1/monitoring/health_check', params: {}, as: :json
       expect(response).to have_http_status(:unauthorized)
 
@@ -457,7 +458,7 @@ RSpec.describe 'Monitoring', type: :request do
       travel_back
 
       # health_check - unprocessable mail
-      dir = Rails.root.join('tmp', 'unprocessable_mail')
+      dir = Rails.root.join('tmp/unprocessable_mail')
       FileUtils.mkdir_p(dir)
       FileUtils.touch("#{dir}/test.eml")
 
@@ -512,7 +513,7 @@ RSpec.describe 'Monitoring', type: :request do
     end
 
     it 'does check restart_failed_jobs' do
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       post '/api/v1/monitoring/restart_failed_jobs', params: {}, as: :json
       expect(response).to have_http_status(:ok)
     end
@@ -522,13 +523,17 @@ RSpec.describe 'Monitoring', type: :request do
       prev_es_config = Setting.get('es_url')
       Setting.set('es_url', 'http://127.0.0.1:92001')
 
+      # delete all background jobs created while seeding
+      # to have a clean state for checking for failed ones
+      Delayed::Job.destroy_all
+
       # add a new object
-      object = create(:object_manager_attribute_text)
+      object = create(:object_manager_attribute_text, name: 'test4')
 
       migration = ObjectManager::Attribute.migration_execute
       expect(true).to eq(migration)
 
-      authenticated_as(admin_user)
+      authenticated_as(admin)
       post "/api/v1/object_manager_attributes/#{object.id}", params: {}, as: :json
       token = @response.headers['CSRF-TOKEN']
 
@@ -591,7 +596,7 @@ RSpec.describe 'Monitoring', type: :request do
       expect(json_response['message']).to be_truthy
       expect(json_response['issues']).to be_truthy
       expect(json_response['healthy']).to eq(false)
-      expect( json_response['message']).to eq("Failed to run background job #1 'SearchIndexJob' 1 time(s) with 1 attempt(s).")
+      expect( json_response['message']).to eq("Failed to run background job #1 'SearchIndexAssociationsJob' 1 time(s) with 1 attempt(s).;Failed to run background job #2 'SearchIndexJob' 1 time(s) with 1 attempt(s).")
 
       # add another job
       manual_added = SearchIndexJob.perform_later('Ticket', 1)
@@ -605,7 +610,7 @@ RSpec.describe 'Monitoring', type: :request do
       expect(json_response['message']).to be_truthy
       expect(json_response['issues']).to be_truthy
       expect(json_response['healthy']).to eq(false)
-      expect( json_response['message']).to eq("Failed to run background job #1 'SearchIndexJob' 2 time(s) with 11 attempt(s).")
+      expect( json_response['message']).to eq("Failed to run background job #1 'SearchIndexAssociationsJob' 1 time(s) with 1 attempt(s).;Failed to run background job #2 'SearchIndexJob' 2 time(s) with 11 attempt(s).")
 
       # add another job
       dummy_class = Class.new(ApplicationJob) do
@@ -626,7 +631,7 @@ RSpec.describe 'Monitoring', type: :request do
       expect(json_response['message']).to be_truthy
       expect(json_response['issues']).to be_truthy
       expect(json_response['healthy']).to eq(false)
-      expect( json_response['message']).to eq("Failed to run background job #1 'Object' 1 time(s) with 5 attempt(s).;Failed to run background job #2 'SearchIndexJob' 2 time(s) with 11 attempt(s).")
+      expect(json_response['message']).to eq("Failed to run background job #1 'Object' 1 time(s) with 5 attempt(s).;Failed to run background job #2 'SearchIndexAssociationsJob' 1 time(s) with 1 attempt(s).;Failed to run background job #3 'SearchIndexJob' 2 time(s) with 11 attempt(s).")
 
       # reset settings
       Setting.set('es_url', prev_es_config)
@@ -645,7 +650,7 @@ RSpec.describe 'Monitoring', type: :request do
       expect(json_response['message']).to be_truthy
       expect(json_response['issues']).to be_truthy
       expect(json_response['healthy']).to eq(false)
-      expect(json_response['message']).to eq("13 failing background jobs;Failed to run background job #1 'Object' 8 time(s) with 40 attempt(s).;Failed to run background job #2 'SearchIndexJob' 2 time(s) with 11 attempt(s).")
+      expect(json_response['message']).to eq("14 failing background jobs;Failed to run background job #1 'Object' 7 time(s) with 35 attempt(s).;Failed to run background job #2 'SearchIndexAssociationsJob' 1 time(s) with 1 attempt(s).;Failed to run background job #3 'SearchIndexJob' 2 time(s) with 11 attempt(s).")
 
       # cleanup
       Delayed::Job.delete_all

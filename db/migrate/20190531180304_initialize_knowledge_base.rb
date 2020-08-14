@@ -6,8 +6,8 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
     create_table :knowledge_bases do |t|
       t.string :iconset, limit: 30, null: false
 
-      t.string :color_highlight, limit: 9, null: false
-      t.string :color_header,    limit: 9, null: false
+      t.string :color_highlight, limit: 25, null: false
+      t.string :color_header,    limit: 25, null: false
 
       t.string :homepage_layout, null: false
       t.string :category_layout, null: false
@@ -48,7 +48,7 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
     end
 
     create_table :knowledge_base_category_translations do |t|
-      t.string :title,       limit: 250, null: false
+      t.string :title, limit: 250, null: false
 
       t.references :kb_locale, null: false, foreign_key: { to_table: :knowledge_base_locales }
       t.references :category,  null: false, foreign_key: { to_table: :knowledge_base_categories, on_delete: :cascade }
@@ -78,7 +78,7 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
     end
 
     create_table :knowledge_base_answer_translations do |t|
-      t.string :title,   limit: 250,  null: false
+      t.string :title, limit: 250, null: false
 
       t.references :kb_locale, null: false, foreign_key: { to_table: :knowledge_base_locales }
       t.references :answer,    null: false, foreign_key: { to_table: :knowledge_base_answers, on_delete: :cascade }
@@ -92,6 +92,7 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
 
     create_table :knowledge_base_menu_items do |t|
       t.references :kb_locale, null: false, foreign_key: { to_table: :knowledge_base_locales, on_delete: :cascade }
+      t.string     :location,  null: false, index: true
       t.integer    :position,  null: false, index: true
       t.string     :title,     null: false, limit: 100
       t.string     :url,       null: false, limit: 500
@@ -141,7 +142,7 @@ class InitializeKnowledgeBase < ActiveRecord::Migration[5.0]
       frontend:    true
     )
 
-    return if !Setting.find_by(name: 'system_init_done')
+    return if !Setting.exists?(name: 'system_init_done')
 
     Permission.create_if_not_exists(
       name:        'admin.knowledge_base',

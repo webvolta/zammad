@@ -64,7 +64,7 @@ install all packages located under auto_install/*.zpm
 
     data = []
     Dir.foreach(path) do |entry|
-      if entry =~ /\.zpm/ && entry !~ /^\./
+      if entry.include?('.zpm') && entry !~ /^\./
         data.push entry
       end
     end
@@ -170,7 +170,7 @@ link files + execute migration up
       file = file.sub(%r{^/}, '')
 
       # ignore files
-      if file.match?(/^README/)
+      if file.start_with?('README')
         logger.info "NOTICE: Ignore #{file}"
         next
       end
@@ -408,9 +408,10 @@ execute all pending package migrations at once
   end
 
   def self._read_file(file, fullpath = false)
-    location = if fullpath == false
+    location = case fullpath
+               when false
                  @@root + '/' + file
-               elsif fullpath == true
+               when true
                  file
                else
                  fullpath + '/' + file
@@ -420,7 +421,7 @@ execute all pending package migrations at once
       data = File.open(location, 'rb')
       contents = data.read
     rescue => e
-      raise 'ERROR: ' + e.inspect
+      raise e
     end
     contents
   end
@@ -462,7 +463,7 @@ execute all pending package migrations at once
       file.close
       File.chmod(permission.to_s.to_i(8), location)
     rescue => e
-      raise 'ERROR: ' + e.inspect
+      raise e
     end
     true
   end

@@ -66,7 +66,8 @@ reconnect - chat session already exists, serve agent and session chat messages (
       chat_session = Chat::Session.find_by(session_id: session_id, state: %w[waiting running])
 
       if chat_session
-        if chat_session.state == 'running'
+        case chat_session.state
+        when 'running'
           user = chat_session.agent_user
           if user
 
@@ -80,7 +81,7 @@ reconnect - chat session already exists, serve agent and session chat messages (
               }
             end
           end
-        elsif chat_session.state == 'waiting'
+        when 'waiting'
           return {
             state:    'reconnect',
             position: chat_session.position,
@@ -617,6 +618,23 @@ check if ip address is blocked for chat
 
 =begin
 
+check if website is allowed for chat
+
+  chat = Chat.find(123)
+  chat.website_whitelisted?('zammad.org')
+
+=end
+
+  def website_whitelisted?(website)
+    return true if whitelisted_websites.blank?
+
+    whitelisted_websites.split(';').any? do |whitelisted_website|
+      website.downcase.include?(whitelisted_website.downcase.strip)
+    end
+  end
+
+=begin
+
 check if country is blocked for chat
 
   chat = Chat.find(123)
@@ -633,10 +651,9 @@ check if country is blocked for chat
     return false if geo_ip['country_code'].blank?
 
     countries = block_country.split(';')
-    countries.each do |local_country|
-      return true if geo_ip['country_code'] == local_country
+    countries.any? do |local_country|
+      geo_ip['country_code'] == local_country
     end
-    false
   end
 
 end

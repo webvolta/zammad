@@ -111,15 +111,13 @@ class Transaction::Notification
         if !identifier || identifier == ''
           identifier = user.login
         end
-        already_notified = false
-        History.list('Ticket', ticket.id, nil, nil, ['created_at > ?', [Time.zone.now - 2.days]]).each do |history|
-          next if history['type'] != 'notification'
-          next if !history['value_to'].match?(/\(#{Regexp.escape(@item[:type])}:/)
-          next if !history['value_to'].match?(/#{Regexp.escape(identifier)}\(/)
-          next if !history['created_at'].today?
 
-          already_notified = true
-        end
+        already_notified = History.where(
+          history_type_id:   History.type_lookup('notification').id,
+          history_object_id: History.object_lookup('Ticket').id,
+          o_id:              ticket.id
+        ).where('created_at > ?', Time.zone.now.beginning_of_day).where('value_to LIKE ?', "%#{identifier}(#{@item[:type]}:%").exists?
+
         next if already_notified
       end
 
@@ -161,7 +159,7 @@ class Transaction::Notification
       end
 
       # ignore email channel notification and empty emails
-      if !channels['email'] || !user.email || user.email == ''
+      if !channels['email'] || user.email.blank?
         add_recipient_list(ticket, user, used_channels, @item[:type])
         next
       end
@@ -172,15 +170,16 @@ class Transaction::Notification
       # get user based notification template
       # if create, send create message / block update messages
       template = nil
-      if @item[:type] == 'create'
+      case @item[:type]
+      when 'create'
         template = 'ticket_create'
-      elsif @item[:type] == 'update'
+      when 'update'
         template = 'ticket_update'
-      elsif @item[:type] == 'reminder_reached'
+      when 'reminder_reached'
         template = 'ticket_reminder_reached'
-      elsif @item[:type] == 'escalation'
+      when 'escalation'
         template = 'ticket_escalation'
-      elsif @item[:type] == 'escalation_warning'
+      when 'escalation_warning'
         template = 'ticket_escalation_warning'
       else
         raise "unknown type for notification #{@item[:type]}"
@@ -237,7 +236,7 @@ class Transaction::Notification
 
     return {} if !@item[:changes]
 
-    locale = user.preferences[:locale] || Setting.get('locale_default') || 'en-us'
+    locale = user.locale
 
     # only show allowed attributes
     attribute_list = ObjectManager::Attribute.by_object_as_hash('Ticket', user)

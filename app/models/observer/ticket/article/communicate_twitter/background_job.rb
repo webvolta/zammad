@@ -11,7 +11,6 @@ class Observer::Ticket::Article::CommunicateTwitter::BackgroundJob
     article.preferences['delivery_retry'] += 1
 
     ticket = Ticket.lookup(id: article.ticket_id)
-    log_error(article, "Can't find ticket.preferences for Ticket.find(#{article.ticket_id})") if !ticket.preferences
     log_error(article, "Can't find ticket.preferences['channel_id'] for Ticket.find(#{article.ticket_id})") if !ticket.preferences['channel_id']
     channel = Channel.lookup(id: ticket.preferences['channel_id'])
 
@@ -30,7 +29,7 @@ class Observer::Ticket::Article::CommunicateTwitter::BackgroundJob
     end
 
     log_error(article, "No such channel id #{ticket.preferences['channel_id']}") if !channel
-    log_error(article, "Channel.find(#{channel.id}) isn't a twitter channel!") if !channel.options[:adapter].match?(/\Atwitter/i)
+    log_error(article, "Channel.find(#{channel.id}) isn't a twitter channel!") if !channel.options[:adapter].try(:match?, /\Atwitter/i)
 
     begin
       tweet = channel.deliver(
@@ -51,10 +50,9 @@ class Observer::Ticket::Article::CommunicateTwitter::BackgroundJob
     # fill article with tweet info
 
     # direct message
-    tweet_id = nil
     if tweet.is_a?(Hash)
       tweet_type = 'DirectMessage'
-      tweet_id = tweet[:event][:id].to_s
+      article.message_id = tweet[:event][:id].to_s
       if tweet[:event] && tweet[:event][:type] == 'message_create'
         #article.from = "@#{tweet.sender.screen_name}"
         #article.to = "@#{tweet.recipient.screen_name}"
@@ -63,12 +61,19 @@ class Observer::Ticket::Article::CommunicateTwitter::BackgroundJob
           recipient_id: tweet[:event][:message_create][:target][:recipient_id],
           sender_id:    tweet[:event][:message_create][:sender_id],
         }
+
+        article.preferences['links'] = [
+          {
+            url:    TwitterSync::DM_URL_TEMPLATE % article.preferences[:twitter].slice(:recipient_id, :sender_id).values.map(&:to_i).sort.join('-'),
+            target: '_blank',
+            name:   'on Twitter',
+          },
+        ]
       end
 
     # regular tweet
     elsif tweet.class == Twitter::Tweet
       tweet_type = 'Tweet'
-      tweet_id = tweet.id.to_s
       article.from = "@#{tweet.user.screen_name}"
       if tweet.user_mentions
         to = ''
@@ -95,6 +100,15 @@ class Observer::Ticket::Article::CommunicateTwitter::BackgroundJob
           created_at:          tweet.created_at,
         )
       end
+
+      article.message_id = tweet.id.to_s
+      article.preferences['links'] = [
+        {
+          url:    TwitterSync::STATUS_URL_TEMPLATE % tweet.id,
+          target: '_blank',
+          name:   'on Twitter',
+        },
+      ]
     else
       raise "Unknown tweet type '#{tweet.class}'"
     end
@@ -103,15 +117,6 @@ class Observer::Ticket::Article::CommunicateTwitter::BackgroundJob
     article.preferences['delivery_status_message'] = nil
     article.preferences['delivery_status'] = 'success'
     article.preferences['delivery_status_date'] = Time.zone.now
-
-    article.message_id = tweet_id
-    article.preferences['links'] = [
-      {
-        url:    "https://twitter.com/statuses/#{tweet_id}",
-        target: '_blank',
-        name:   'on Twitter',
-      },
-    ]
 
     article.save!
 
